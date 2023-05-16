@@ -1,4 +1,4 @@
-FROM golang:1.15 AS build
+FROM golang:1.20 AS build
 
 LABEL maintainer="Iason Sotiropoulos <isotiropoulos@singularlogic.eu>"
 

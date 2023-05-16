@@ -57,9 +57,9 @@ func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.Fi
 			"meta":           file.Meta,
 			"folder":         file.FolderID,
 			"original_title": file.OriginalTitle,
+			"ancestores":     file.Ancestors,
 			"file_type":      file.FileType,
 			"size":           file.Size,
-			// "encrypted":      file.Encrypted,
 		},
 	}
 	_, erro := db.Collection(FILESCOLLECTION).UpdateOne(context.TODO(), filter, update)

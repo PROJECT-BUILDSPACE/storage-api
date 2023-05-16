@@ -274,7 +274,6 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 	for part := range partsCh {
 		parts[part.PartNumber-1] = part
 	}
-	// fmt.Println(parts, "\n\n\n")
 
 	// concatenate bytes of the "Data" field of each object
 	var buffer bytes.Buffer
@@ -522,6 +521,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 		Date: time.Now(),
 	}
 	file.Meta.Update = []models.Updated{updated}
+	file.Meta.Title = newName
 	file.Id, err = utils.GenerateUUID()
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating file's ID.", err.Error(), "FIL0042")
@@ -625,10 +625,10 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	// Remove the deleted file (but keep the order)
 	newFiles := utils.RemoveFromSlice(oldParent.Files, file.Id)
 
-	oldParent.Folders = newFiles
+	oldParent.Files = newFiles
 
 	// Update old Parent
-	_, err = folderDB.UpdateWithId(oldParent)
+	oldParent, err = folderDB.UpdateWithId(oldParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating old parent folder.", err.Error(), "FIL0054")
 		return
@@ -648,7 +648,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 		Date: time.Now(),
 	}
 	file.Meta.Update = []models.Updated{updated}
-
+	file.Meta.Title = newName
 	ancestors := append(newParent.Ancestors, file.FolderID)
 	file.Ancestors = ancestors
 	updatedFile, err := fileDB.UpdateWithId(file)
