@@ -1,0 +1,3382 @@
+{
+	"info": {
+		"_postman_id": "20ab87a2-ee0a-41ba-8294-90d887a8c176",
+		"name": "BUILDSPACE",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26263170"
+	},
+	"item": [
+		{
+			"name": "OIDC",
+			"item": [
+				{
+					"name": "Master Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// var jsonData = pm.response.json();\r",
+									"// pm.collectionVariables.set('master_token', jsonData.access_token);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "admin-cli",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "buildspace",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "4@8<lk4<iAhp&of",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/realms/master/protocol/openid-connect/token",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"realms",
+								"master",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"delete-group\",\r\n    \"path\": \"/\",\r\n    \"attributes\": {\r\n        \"description\": [\"My group description\"]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/?search=delete-group",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "delete-group"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"var masterToken = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"        masterToken = res.json().access_token\r",
+									"    pm.variables.set(\"masterToken\", masterToken)\r",
+									"    // Define the request options\r",
+									"   \r",
+									"    // Send the request and extract the group ID from the response\r",
+									"    pm.sendRequest({\r",
+									"        url: pm.collectionVariables.get('OIDC_URL') + '/admin/realms/buildspace/groups/?search=delete-group',\r",
+									"        method: \"GET\",  \r",
+									"        header: {\r",
+									"            'Content-Type': 'application/json',\r",
+									"            'Authorization': 'Bearer ' + masterToken\r",
+									"        }}, (err, res) => {\r",
+									"    if (err) {\r",
+									"        console.log(err);\r",
+									"    } else {\r",
+									"        const group = res.json()[0]; // Assume the first group in the list is the one we want\r",
+									"        pm.collectionVariables.set('DELETE_GROUP_ID', group.id);\r",
+									"    }\r",
+									"    });\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/{{DELETE_GROUP_ID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								"{{DELETE_GROUP_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Temporary Group's Path",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"tmp\",\r\n    \"path\": \"/\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get tmp Folder's ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"responseBody = pm.response.json();\r",
+									"pm.collectionVariables.set(\"tmpID\", responseBody[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/?search=tmp",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "tmp"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Temporary Test Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"const daysToExpire = pm.collectionVariables.get('DAYS_TO_EXPIRE');\r",
+									"const moment = require('moment');\r",
+									"const expiration = moment().add(daysToExpire, 'days').toISOString();\r",
+									"pm.variables.set('EXPIRATION', expiration);\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"test\",\r\n    \"path\": \"/\",\r\n    \"attributes\": {\r\n        \"expiration\": [\"{{EXPIRATION}}\"]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/{{tmpID}}/children",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								"{{tmpID}}",
+								"children"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Temporary Groups",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/{{tmpID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								"{{tmpID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MinIO",
+			"item": [
+				{
+					"name": "Test /minio/health/live",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{MINIO_URL}}/minio/health/live",
+							"host": [
+								"{{MINIO_URL}}"
+							],
+							"path": [
+								"minio",
+								"health",
+								"live"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test /minio/health/ready",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{MINIO_URL}}/minio/health/ready",
+							"host": [
+								"{{MINIO_URL}}"
+							],
+							"path": [
+								"minio",
+								"health",
+								"ready"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "BUILDSPACE API",
+			"item": [
+				{
+					"name": "Local Deployment",
+					"item": [
+						{
+							"name": "Create Bucket",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"{{KC_UGID_1}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/bucket",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"bucket"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 1)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL1-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{KC_UGID_1}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Folder of level 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"{{FL2-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder Again (level 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-2\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 3)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL3-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-3\"\r\n    },\r\n    \"parent\": \"{{FL2-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Folder",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder?id={{FL1-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FL1-ID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "List Folder Items",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/list?id={{FL1-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"list"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FL1-ID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Root Folder",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder?id=",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 7MB",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "2",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL2-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 2.9MB",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE2.9\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "2",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL1-ID}}\",\r\n    \"original_title\": \"{{FILE2.9-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File Info (2.9MB)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/info/file?id={{FILE2.9}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"info",
+										"file"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FILE2.9}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File (2.9MB)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File Info (7.0MB) Copy",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/info/file?id={{FILE7.0}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"info",
+										"file"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FILE7.0}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File (7.0MB)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete File (2.9MB) Copy",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 2.9MB Again Copy",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE2.9\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL3-ID}}\",\r\n    \"original_title\": \"{{FILE2.9-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Folder of level 2 (with all nested folders and files) Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"{{FL2-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 7MB in FL1 Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL1-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Folder Copy",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"pm.sendRequest({\r",
+											"    url: pm.collectionVariables.get(\"API_URL\") + \"/folder?id=\" + pm.collectionVariables.get(\"FL1-ID\"),\r",
+											"    method: 'GET',\r",
+											"    header: {\r",
+											"        'Content-Type': 'application/json',\r",
+											"        'Authorization': 'Bearer ' + pm.collectionVariables.get(\"TOKEN\"),\r",
+											"        'X-Group-Id': pm.collectionVariables.get(\"KC_UGID_1\")\r",
+											"    },\r",
+											"    }, (err, res) => {\r",
+											"        UPDATE_BODY = res.json()\r",
+											"        UPDATE_BODY['meta']['title'] = \"Folder-Level-1-UPDATED\"\r",
+											"        console.log(UPDATE_BODY)\r",
+											"\r",
+											"        pm.variables.set(\"UPDATE_BODY\", JSON.stringify(UPDATE_BODY))\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{UPDATE_BODY}}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update File Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"pm.sendRequest({\r",
+											"    url: pm.collectionVariables.get(\"API_URL\") + \"/info/file?id=\" + pm.collectionVariables.get(\"FILE7.0\"),\r",
+											"    method: 'GET',\r",
+											"    header: {\r",
+											"        'Content-Type': 'application/json',\r",
+											"        'Authorization': 'Bearer ' + pm.collectionVariables.get(\"TOKEN\"),\r",
+											"        'X-Group-Id': pm.collectionVariables.get(\"KC_UGID_1\")\r",
+											"    },\r",
+											"    }, (err, res) => {\r",
+											"        UPDATE_BODY = res.json()\r",
+											"        UPDATE_BODY['meta']['title'] = \"TITLE-UPDATED\"\r",
+											"        console.log(UPDATE_BODY)\r",
+											"\r",
+											"        pm.variables.set(\"UPDATE_BODY\", JSON.stringify(UPDATE_BODY))\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{UPDATE_BODY}}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Copy File Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0-NEW\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"id\": \"{{FILE7.0}}\",\r\n    \"destination\": \"{{KC_UGID_1}}\",\r\n    \"new_name\": \"copied {{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/copy/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"copy",
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Move FIle Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"id\": \"{{FILE7.0-NEW}}\",\r\n    \"destination\": \"{{FL1-ID}}\",\r\n    \"new_name\": \"moved {{FILE7.0-NEW}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/move/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"move",
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Bucket Copy",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/bucket/{{KC_UGID_1}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"bucket",
+										"{{KC_UGID_1}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Production Deployment",
+					"item": [
+						{
+							"name": "Create Bucket",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"{{KC_UGID_1}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/bucket",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"bucket"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 1)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL1-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{KC_UGID_1}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Folder of level 2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"{{FL2-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder Again (level 2)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-2\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Sub Folder (level 3)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL3-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-3\"\r\n    },\r\n    \"parent\": \"{{FL2-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Folder",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder?id={{FL1-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FL1-ID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "List Folder Items",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/list?id={{FL1-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"list"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FL1-ID}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Root Folder",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder?id=",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 7.0MB Begin",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "2",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL2-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 7MB Part 1/2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF_part_1"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 7MB Part 2/2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF_part_2"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=2",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 2.9MB Begin",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE2.9\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "1",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL1-ID}}\",\r\n    \"original_title\": \"{{FILE2.9-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File 2.9MB Part 1/1",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/2.9MB_TIFF.tif"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File Info (2.9MB) Copy",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/info/file?id={{FILE2.9}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"info",
+										"file"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FILE2.9}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File (2.9MB)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File Info (7.0MB)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/info/file?id={{FILE7.0}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"info",
+										"file"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{FILE7.0}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File (7MB) Part 1/2",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get File (7MB) Part 2/2",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=2",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete File (2.9MB)",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File in FL3 2.9MB Begin",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE2.9\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "1",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL3-ID}}\",\r\n    \"original_title\": \"{{FILE2.9-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File in FL3 2.9MB Part 1/1",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/2.9MB_TIFF.tif"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE2.9}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE2.9}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Folder of level 2 (with all nested folders and files)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FL2-ID\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder",
+										"{{FL2-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File in FL1 7.0MB Begin",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "total",
+										"value": "2",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"folder\": \"{{FL1-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File in FL1 7MB Part 1/2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF_part_1"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=1",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Post File in FL1 7MB Part 2/2",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/octet-stream",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF_part_2"
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=2",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file",
+										"{{FILE7.0}}"
+									],
+									"query": [
+										{
+											"key": "part",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Folder",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"pm.sendRequest({\r",
+											"    url: pm.collectionVariables.get(\"API_URL\") + \"/folder?id=\" + pm.collectionVariables.get(\"FL1-ID\"),\r",
+											"    method: 'GET',\r",
+											"    header: {\r",
+											"        'Content-Type': 'application/json',\r",
+											"        'Authorization': 'Bearer ' + pm.collectionVariables.get(\"TOKEN\"),\r",
+											"        'X-Group-Id': pm.collectionVariables.get(\"KC_UGID_1\")\r",
+											"    },\r",
+											"    }, (err, res) => {\r",
+											"        UPDATE_BODY = res.json()\r",
+											"        UPDATE_BODY['meta']['title'] = \"Folder-Level-1-UPDATED\"\r",
+											"        console.log(UPDATE_BODY)\r",
+											"\r",
+											"        pm.variables.set(\"UPDATE_BODY\", JSON.stringify(UPDATE_BODY))\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{UPDATE_BODY}}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/folder",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"folder"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update File",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"pm.sendRequest({\r",
+											"    url: pm.collectionVariables.get(\"API_URL\") + \"/info/file?id=\" + pm.collectionVariables.get(\"FILE7.0\"),\r",
+											"    method: 'GET',\r",
+											"    header: {\r",
+											"        'Content-Type': 'application/json',\r",
+											"        'Authorization': 'Bearer ' + pm.collectionVariables.get(\"TOKEN\"),\r",
+											"        'X-Group-Id': pm.collectionVariables.get(\"KC_UGID_1\")\r",
+											"    },\r",
+											"    }, (err, res) => {\r",
+											"        UPDATE_BODY = res.json()\r",
+											"        UPDATE_BODY['meta']['title'] = \"TITLE-UPDATED\"\r",
+											"        console.log(UPDATE_BODY)\r",
+											"\r",
+											"        pm.variables.set(\"UPDATE_BODY\", JSON.stringify(UPDATE_BODY))\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{UPDATE_BODY}}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Copy File",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"responseBody = pm.response.json();\r",
+											"pm.collectionVariables.set(\"FILE7.0-NEW\", responseBody._id);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"id\": \"{{FILE7.0}}\",\r\n    \"destination\": \"{{KC_UGID_1}}\",\r\n    \"new_name\": \"copied {{FL1-ID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/copy/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"copy",
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Move FIle",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"id\": \"{{FILE7.0-NEW}}\",\r\n    \"destination\": \"{{FL1-ID}}\",\r\n    \"new_name\": \"moved {{FILE7.0-NEW}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{API_URL}}/move/file",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"move",
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Bucket",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Group-Id",
+										"value": "{{KC_UGID_1}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{API_URL}}/bucket/{{KC_UGID_1}}",
+									"host": [
+										"{{API_URL}}"
+									],
+									"path": [
+										"bucket",
+										"{{KC_UGID_1}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{TOKEN}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/buildspace/protocol/openid-connect';",
+					"var cname = pm.collectionVariables.get('UNAME');",
+					"var cpword = pm.collectionVariables.get('PWD');",
+					"var cID = pm.collectionVariables.get('CLIENT_ID');",
+					"var cSECR = pm.collectionVariables.get('CLIENT_SECRET');",
+					"",
+					"function parseJwt (token,part) {",
+					"   var base64Url = token.split('.')[part];",
+					"   var words = CryptoJS.enc.Base64.parse(base64Url);",
+					"   var jsonPayload = CryptoJS.enc.Utf8.stringify(words);",
+					"   return  JSON.parse(jsonPayload);",
+					"};",
+					"",
+					"pm.sendRequest({",
+					"    url: authServiceUrl+'/token',",
+					"    method: 'POST',",
+					"header: 'Content-Type:application/x-www-form-urlencoded',",
+					"  body: {",
+					"            mode: 'urlencoded',",
+					"            urlencoded: [",
+					"                    { key: \"grant_type\", value: \"password\"},",
+					"                    { key: \"client_id\", value: cID },",
+					"                    { key: \"client_secret\", value: cSECR },",
+					"                    { key: \"username\", value: cname },",
+					"                    { key: \"password\", value: cpword },",
+					"            ]",
+					"    }",
+					"    }, (err, res) => {",
+					"    payload = parseJwt(res.json().access_token,1);",
+					"    pm.collectionVariables.set(\"KC_UID\", payload.sub)",
+					"    pm.collectionVariables.set(\"KC_UGID_1\", payload.groupIDs[0])",
+					"    pm.collectionVariables.set(\"TOKEN\", res.json().access_token)",
+					"});",
+					"",
+					"// cname = 'buildspace';",
+					"// cpword = \"4@8<lk4<iAhp&of\";",
+					"// cID = \"admin-cli\";",
+					"// cSECR = \"\";",
+					"",
+					"// pm.sendRequest({",
+					"//     url: authServiceUrl+'/token',",
+					"//     method: 'POST',",
+					"// header: 'Content-Type:application/x-www-form-urlencoded',",
+					"//   body: {",
+					"//             mode: 'urlencoded',",
+					"//             urlencoded: [",
+					"//                     { key: \"grant_type\", value: \"password\"},",
+					"//                     { key: \"client_id\", value: cID },",
+					"//                     { key: \"client_secret\", value: cSECR },",
+					"//                     { key: \"username\", value: cname },",
+					"//                     { key: \"password\", value: cpword },",
+					"//             ]",
+					"//     }",
+					"//     }, (err, res) => {",
+					"//     pm.collectionVariables.set(\"masterToken\", res.json().access_token)",
+					"// });",
+					"",
+					"",
+					"",
+					"",
+					"// pm.sendRequest({",
+					"//     url: \"http://localhost:30105/realms/master/protocol/openid-connect/token\",",
+					"//     method: 'POST',",
+					"//     header: {",
+					"//         'Content-Type': 'application/x-www-form-urlencoded'",
+					"//     },",
+					"//     body: {",
+					"//         mode: 'urlencoded',",
+					"//         urlencoded: [",
+					"//             {key: 'client_id', value: 'admin-cli'},",
+					"//             {key: 'username', value: 'buildspace'},",
+					"//             {key: 'password', value: '4@8<lk4<iAhp&of'},",
+					"//             {key: 'grant_type', value: 'password'},",
+					"//             {key: 'client_secret', value: ''}",
+					"//         ]",
+					"//     }",
+					"// }, function (err, res) {",
+					"//     if (err) {",
+					"//         console.log(err);",
+					"//     } else {",
+					"//         pm.collectionVariables.set(\"master_token\", res.json().access_token);",
+					"//     }",
+					"// });",
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "OIDC_URL",
+			"value": "http://localhost:30105/auth/realms/buildspace",
+			"type": "string"
+		},
+		{
+			"key": "UNAME",
+			"value": "isotiropoulos@singularlogic.eu",
+			"type": "string"
+		},
+		{
+			"key": "PWD",
+			"value": "isotiropoulos",
+			"type": "string"
+		},
+		{
+			"key": "CLIENT_ID",
+			"value": "minioapi",
+			"type": "string"
+		},
+		{
+			"key": "CLIENT_SECRET",
+			"value": "d4AvWhUKAZqdMnBVPR0dD5w5RrZfk9RC",
+			"type": "string"
+		},
+		{
+			"key": "MINIO_URL",
+			"value": "http://localhost:9000"
+		},
+		{
+			"key": "TOKEN",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "API_URL",
+			"value": "http://localhost:30000",
+			"type": "string"
+		},
+		{
+			"key": "KC_UID",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "KC_UGID_1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "UNAME2",
+			"value": "jasonsoti1@gmail.com",
+			"type": "string"
+		},
+		{
+			"key": "PWD2",
+			"value": "jasonsoti1",
+			"type": "string"
+		},
+		{
+			"key": "FL1-ID",
+			"value": ""
+		},
+		{
+			"key": "FL2-ID",
+			"value": ""
+		},
+		{
+			"key": "FILE2.9",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "FILE7.0",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "FL3-ID",
+			"value": ""
+		},
+		{
+			"key": "DAYS_TO_EXPIRE",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "DELETE_GROUP_ID",
+			"value": ""
+		},
+		{
+			"key": "tmpID",
+			"value": ""
+		},
+		{
+			"key": "FILE2.9-NEW",
+			"value": ""
+		},
+		{
+			"key": "FILE2.9-LOCAL_PATH",
+			"value": "C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/2.9MB_TIFF.tif",
+			"type": "string"
+		},
+		{
+			"key": "FILE7.0-LOCAL_PATH",
+			"value": "C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF.tif",
+			"type": "string"
+		},
+		{
+			"key": "FILE7.0-NEW",
+			"value": ""
+		}
+	]
+}

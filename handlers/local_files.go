@@ -200,7 +200,6 @@ func PostFileLocal(w http.ResponseWriter, r *http.Request) {
 func GetFileLocal(w http.ResponseWriter, r *http.Request) {
 
 	// Gets params
-	fmt.Println("TO XRISTO S")
 	params := mux.Vars(r)
 	fileId := params["id"]
 
