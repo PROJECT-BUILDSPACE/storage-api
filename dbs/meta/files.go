@@ -57,7 +57,7 @@ func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.Fi
 			"meta":           file.Meta,
 			"folder":         file.FolderID,
 			"original_title": file.OriginalTitle,
-			"ancestores":     file.Ancestors,
+			"ancestors":      file.Ancestors,
 			"file_type":      file.FileType,
 			"size":           file.Size,
 		},

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/minio/minio-go/v7"
 	"github.com/mitchellh/mapstructure"
 
 	models "github.com/isotiropoulos/storage-api/models"
@@ -29,6 +30,17 @@ func RespondWithError(w http.ResponseWriter, code int, message string, reason st
 }
 
 func init() {}
+
+func GetPartFromChan(ch <-chan minio.ObjectPart) <-chan minio.ObjectPart {
+	firstCh := make(chan minio.ObjectPart)
+
+	go func() {
+		firstCh <- <-ch
+		close(firstCh)
+	}()
+
+	return firstCh
+}
 
 // GenerateUUID returns random IDs
 func GenerateUUID() (string, error) {

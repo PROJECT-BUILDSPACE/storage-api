@@ -48,6 +48,11 @@ func main() {
 	r := mux.NewRouter()
 	r.Methods("OPTIONS").HandlerFunc(optionsHandler)
 
+	deployment := os.Getenv("DEPLOYMENT")
+	if deployment == "" {
+		deployment = "PROD" // "LOCAL", "PROD"
+	}
+
 	// Route handles & endpoints
 	var mid middleware.IAuth = &middleware.AuthImplementation{}
 
@@ -56,13 +61,26 @@ func main() {
 	r.HandleFunc("/bucket/{id}", mid.AuthMiddleware(handle.DeleteBucket)).Methods("DELETE")
 
 	// File-wise
-	r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFile)).Methods("POST")
-	r.HandleFunc("/file", mid.AuthMiddleware(handle.GetFile)).Queries("id", "{fileId}").Methods("GET")
-	r.HandleFunc("/file/info", mid.AuthMiddleware(handle.GetFileInfo)).Queries("id", "{fileId}").Methods("GET")
-	r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFile)).Methods("DELETE")
-	r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFile)).Methods("PUT")
-	r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFile)).Methods("POST")
-	r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFile)).Methods("PUT")
+	if deployment == "PROD" {
+		r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFile)).Methods("POST")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.PostFile)).Queries("part", "{partNum}").Methods("POST")
+		r.HandleFunc("/info/file", mid.AuthMiddleware(handle.GetFileInfo)).Queries("id", "{fileId}").Methods("GET")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFile)).Queries("part", "{partNum}").Methods("GET")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFile)).Methods("DELETE")
+		r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFile)).Methods("PUT")
+		r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFile)).Methods("POST")
+		r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFile)).Methods("PUT")
+	} else if deployment == "LOCAL" {
+		r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFileLocal)).Methods("POST")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFileLocal)).Methods("GET")
+		r.HandleFunc("/info/file", mid.AuthMiddleware(handle.GetFileInfoLocal)).Queries("id", "{fileId}").Methods("GET")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFileLocal)).Methods("DELETE")
+		r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFileLocal)).Methods("PUT")
+		r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFileLocal)).Methods("POST")
+		r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFileLocal)).Methods("PUT")
+	} else {
+		log.Panicln("Deployment " + deployment + " not supprted. Please select PROD or LOCAL. If still in doubt contact the BUILDSPACE Support Team.")
+	}
 
 	// Folder-wise
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.PostFolder)).Methods("POST")

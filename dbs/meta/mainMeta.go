@@ -63,11 +63,29 @@ type IFolderStore interface {
 	UpdateWithId(folder models.Folder) (folderUpdated models.Folder, err error)
 }
 
+// IStreamStore is a Database Interface for the Sessions
+type IStreamStore interface {
+	// Insert a new file
+	InsertOne(stream models.Stream) error
+
+	// // Delete by _id
+	// DeleteOneByID(sessionID string) error
+
+	GetOneByID(streamID string) (models.Stream, error)
+
+	GetOneByFileID(fileID string) (models.Stream, error)
+
+	UpdateWithId(stream models.Stream) (objectStream models.Stream, err error)
+}
+
 // FileStore ...
 type FileStore struct{}
 
 // FolderStore ...
 type FolderStore struct{}
+
+// StreamStore ...
+type StreamStore struct{}
 
 // db is a Client of mongoDB
 var db *mongo.Database

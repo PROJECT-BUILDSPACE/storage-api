@@ -2,8 +2,10 @@ package models
 
 import (
 	"bytes"
+	"sync"
 	"time"
 
+	"github.com/minio/minio-go/v7"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -66,13 +68,43 @@ type File struct {
 	// Encrypted     bool     `json:"encrypted" bson:"encrypted"`
 }
 
+// Stream contains information about a file's stream.
+type Stream struct {
+	Id     string               `json:"_id" bson:"_id"`         // Stream's id
+	FileID string               `json:"file_id" bson:"file_id"` // Corresponding File ID
+	Parts  []minio.CompletePart `json:"parts" bson:"parts"`     // All parts relevant to this stream
+	Total  int                  `json:"total" bson:"total"`
+	Status string               `json:"status" bson:"status"` // Status of the stream
+}
+
+// Part contains information about a file's stream.
+type Part struct {
+	Id         string `json:"_id" bson:"_id"`                 // Part's id
+	PartNumber int    `json:"part_number" bson:"part_number"` // Parts's Number
+	StreamID   string `json:"stream_id" bson:"stream_id"`     // Corresponding Stream ID
+	FileID     string `json:"file_id" bson:"file_id"`         // Corresponding File ID
+	Part       []byte `json:"part" bson:"part"`
+}
+
 type FilePart struct {
-	// Id         string       `json:"_id" bson:"_id"`
-	// UserID     string       `json:"userId" bson:"userId"`
-	// Part       string       `json:"part" bson:"part"`
 	PartNumber int          `json:"partNumber" bson:"partNumber"`
 	FileID     string       `json:"fileId" bson:"fileId"`
 	Part       bytes.Buffer `json:"down_stream" bson:"down_stream"`
+}
+
+type MinioPart struct {
+	PartNumber int    `json:"part_number" bson:"part_number"`
+	ETag       string `json:"etag" bson:"etag"`
+}
+
+type Session struct {
+	Id         string         `json:"_id" bson:"_id"`
+	UploadId   string         `json:"upload_id" bson:"upload_id"`
+	TotalParts int            `json:"total_parts" bson:"total_parts"`
+	Parts      []MinioPart    `json:"parts" bson:"parts"`
+	WGroup     sync.WaitGroup `json:"wait_group" bson:"wait_group"`
+	Error      string         `json:"error" bson:"error"`
+	Completed  bool           `json:"completed" bson:"completed"`
 }
 
 // UpdateFileBody is the body of a postFile request.
