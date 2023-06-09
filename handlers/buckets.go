@@ -1,19 +1,35 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	// "github.com/swaggo/http-swagger"
 
 	// "strings"
 
 	"github.com/gorilla/mux"
 	models "github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
+	"go.mongodb.org/mongo-driver/bson"
 	// "BUILDSPACE-api/utils"
 	// "github.com/gorilla/mux"
 )
 
-// MakeBucket is to make a new bucket
+// MakeBucket handles the /bucket POST request.
+// @Summary Create bucket.
+// @Description Use a Bucket model to create a new bucket.
+// @Tags Buckets
+// @Accept json
+// @Produce json
+// @Param body body models.Bucket true "Bucket payload"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Bucket "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /bucket [post]
+// @Security BearerAuth
 func MakeBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -58,7 +74,19 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(info)
 }
 
-// DeleteBucket is to delete a bucket
+// DeleteBucket handles the /bucket/{id} delete request.
+// @Summary Delete bucket with all contents.
+// @Description Delete a bucket based on it's ID.
+// @Accept json
+// @Produce json
+// @Tags Buckets
+// @Param id path string true "Bucket Id"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Bucket "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /bucket/{id} [delete]
+// @Security BearerAuth
 func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -88,10 +116,34 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get file IDs to match streams
+	fileCursor, err := fileDB.GetCursorByAncestors(bucketId)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not find bucket's files.", err.Error(), "BUC0006")
+		return
+	}
+	defer fileCursor.Close(context.Background())
+	for fileCursor.Next(context.Background()) {
+		var result bson.M
+		var file models.File
+		if err := fileCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "BUC0007")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &file)
+
+		err = streamDB.DeleteManyWithFile(file.Id)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete stream.", err.Error(), "BUC0008")
+			return
+		}
+	}
+
 	// Delete nested files
 	err = fileDB.DeleteManyWithAncestore(bucketId)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's files.", err.Error(), "BUC0006")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's files.", err.Error(), "BUC0009")
 		return
 	}
 	json.NewEncoder(w).Encode(models.Bucket{

@@ -6,7 +6,6 @@ import (
 	"github.com/isotiropoulos/storage-api/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -16,13 +15,6 @@ const (
 // InsertOne is to insert an stream in the streams collection
 func (streamstore *StreamStore) InsertOne(stream models.Stream) error {
 	_, err := db.Collection(STREAMSCOLLECTION).InsertOne(context.Background(), stream)
-	return err
-}
-
-// DeleteOneByID is to delete an stream from a particular collection by _id.
-func (streamstore *StreamStore) DeleteOneByID(streamID string) error {
-
-	_, err := db.Collection(STREAMSCOLLECTION).DeleteOne(context.Background(), bson.M{"_id": streamID})
 	return err
 }
 
@@ -44,20 +36,6 @@ func (streamstore *StreamStore) GetOneByFileID(fileID string) (models.Stream, er
 	return stream, err
 }
 
-// GetCursorByFolderID is to get a cursor with streams from a particular folder.
-func (streamstore *StreamStore) GetCursorByFolderID(folderID string) (*mongo.Cursor, error) {
-
-	cursor, err := db.Collection(STREAMSCOLLECTION).Find(context.Background(), bson.M{"folder": folderID})
-	return cursor, err
-}
-
-// GetCursorByAncestors is to get a cursor with streams ancestore.
-func (streamstore *StreamStore) GetCursorByAncestors(ancestors string) (*mongo.Cursor, error) {
-
-	cursor, err := db.Collection(STREAMSCOLLECTION).Find(context.Background(), bson.M{"ancestors": ancestors})
-	return cursor, err
-}
-
 // UpdateWithId is to update a stream's fields.
 func (streamstore *StreamStore) UpdateWithId(stream models.Stream) (objUpdated models.Stream, err error) {
 	filter := bson.M{"_id": stream.Id}
@@ -72,8 +50,8 @@ func (streamstore *StreamStore) UpdateWithId(stream models.Stream) (objUpdated m
 	return stream, erro
 }
 
-// DeleteManyWithAncestore is to delete many folders under the same ancestore.
-func (streamstore *StreamStore) DeleteManyWithAncestore(ancestore string) error {
-	_, err := db.Collection(STREAMSCOLLECTION).DeleteMany(context.Background(), bson.M{"ancestors": ancestore})
+// DeleteManyWithFile is to delete many streams related to the same file.
+func (streamstore *StreamStore) DeleteManyWithFile(fileId string) error {
+	_, err := db.Collection(STREAMSCOLLECTION).DeleteMany(context.Background(), bson.M{"file_id": fileId})
 	return err
 }

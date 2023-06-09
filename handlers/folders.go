@@ -1,29 +1,31 @@
 package handlers
 
 import (
-	// "context"
-
 	"context"
 	"encoding/json"
-
-	// "fmt"
+	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/isotiropoulos/storage-api/models"
-
-	// auth "github.com/isotiropoulos/storage-api/oauth"
-
-	"net/http"
-
 	"github.com/isotiropoulos/storage-api/utils"
-
-	// "strings"
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// PostFolder is to Post a new folder.
+// PostFolder handles the /folder post request.
+// @Summary Create a new folder.
+// @Description Use a Folder model as a payload to create a new folder. Essential fields are meta.title (folder's name) and parent (location).
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param body body models.Folder true "Folder payload"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Bucket "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder [post]
+// @Security BearerAuth
 func PostFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -140,7 +142,21 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(folder)
 }
 
-// DeleteFolder is to Delete a folder.
+// DeleteFolder handles the /folder/{id} delete request.
+// @Summary Delete folder by id.
+// @Description Pass folder's id to delete it. Nested items (either files or folders) will be deleted as well.
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param id path string true "Folder payload"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Folder "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 404 {object} models.ErrorReport "Not Found"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder/{id} [delete]
+// @Security BearerAuth
 func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -234,6 +250,13 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FOL0020")
 			return
 		}
+
+		err = streamDB.DeleteManyWithFile(file.Id)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete stream.", err.Error(), "FOL0036")
+			return
+		}
+
 		// Remove Object from MINIO
 		groupId := r.Header.Get("X-Group-Id")
 		if err = storage.DeleteFile(file.Id, groupId); err != nil {
@@ -244,7 +267,21 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(folder)
 }
 
-// GetFolder is to get a folder.
+// GetFolder handles the /folder?id={id} get request.
+// @Summary Get folder by id.
+// @Description Get a folders meta data by the ID. Pass the ID in a query parameter.
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param id query string true "Folder ID"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Folder "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 404 {object} models.ErrorReport "Not Found"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder [get]
+// @Security BearerAuth
 func GetFolder(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")
@@ -257,14 +294,14 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 		groupId := r.Header.Get("X-Group-Id")
 		folder, err = folderDB.GetOneByID(groupId)
 		if err != nil {
-			utils.RespondWithError(w, http.StatusConflict, "Could not get folder.", err.Error(), "FOL0022")
+			utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0022")
 			return
 		}
 	} else {
 		// Get folder by folder ID
 		folder, err = folderDB.GetOneByID(folderID)
 		if err != nil {
-			utils.RespondWithError(w, http.StatusConflict, "Could not get folder.", err.Error(), "FOL0023")
+			utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
 			return
 		}
 	}
@@ -273,7 +310,21 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(folder)
 }
 
-// UpdateFolder is to Update a folder.
+// UpdateFolder handles the /folder put request.
+// @Summary Update folder by ID.
+// @Description Update a folders meta data by the ID. Pass the Folder model with the updates that are needed.
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param body body models.Folder true "Update body"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.Folder "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 404 {object} models.ErrorReport "Not Found"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder [put]
+// @Security BearerAuth
 func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -355,7 +406,19 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(folder)
 }
 
-// GetFolderItems is to Get a list with folder's items.
+// GetFolderItems handles the /folder/list?id={id} get request.
+// @Summary List folder's items.
+// @Description Get lists of files and folders in a specific folder, by id. Result is a FolderList model
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param id query string true "Folder ID"
+// @Param X-Group-Id header string true "Group ID"
+// @Success 200 {object} models.FolderList "OK"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder/list [get]
+// @Security BearerAuth
 func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")

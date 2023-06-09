@@ -1,0 +1,965 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.\n**Note** that the **X-Group-Id** is a header that is required in all the enpoints.",
+        "title": "BUILSPACE Core Platform Swagger API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "BUILDSPACE Core Platform Support",
+            "url": "http://www.swagger.io/support",
+            "email": "isotiropoulos@singularlogic.eu"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "paths": {
+        "/bucket": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Use a Bucket model to create a new bucket.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Buckets"
+                ],
+                "summary": "Create bucket.",
+                "parameters": [
+                    {
+                        "description": "Bucket payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Bucket"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Bucket"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/bucket/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a bucket based on it's ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Buckets"
+                ],
+                "summary": "Delete bucket with all contents.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bucket Id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Bucket"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/file": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This is the endopoint to update file meta data. Pass a models.File of the file that will be updated with the updates included.\n**Note** that this endpoint updates the meta data and not the file contents. To update file contents user must delete int and re-upload it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Update a file.",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This is the endopoint to upload files. The files are uploaded using a multipart streaming upload.\nStep 1 is to select the content-type.\n- If **application/json** then the request will be sent to initialize the multipart upload. In this case user must pass a **File model as a payload** containing the **folder** and the **original_title** fields. User must also pass the **total** header to specify the number of parts that will be uploaded.\n- If **application/octet-stream** user must pass the **binary data** (decoded) in the body and also provide the **file ID** and part number parameters.",
+                "consumes": [
+                    "application/json",
+                    "application/octet-stream"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Upload a file.",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Total parts of multipart upload",
+                        "name": "total",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "file",
+                        "in": "path"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Number of part",
+                        "name": "part",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/file/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This is the endopoint to get files. The files are downloaded using a **multipart streaming download**.\nUser provies the file id as well as the part number and receives the decoded and decrypted bytes/",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Download a file.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Number of part",
+                        "name": "part",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This is the endopoint to delete files. The files are deleted based on ther id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Delete file by ID.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/folder": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a folders meta data by the ID. Pass the ID in a query parameter.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "Get folder by id.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Folder"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update a folders meta data by the ID. Pass the Folder model with the updates that are needed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "Update folder by ID.",
+                "parameters": [
+                    {
+                        "description": "Update body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Folder"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Folder"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Use a Folder model as a payload to create a new folder. Essential fields are meta.title (folder's name) and parent (location).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "Create a new folder.",
+                "parameters": [
+                    {
+                        "description": "Folder payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Folder"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Bucket"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/folder/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get lists of files and folders in a specific folder, by id. Result is a FolderList model",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "List folder's items.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Folder ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.FolderList"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/folder/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Pass folder's id to delete it. Nested items (either files or folders) will be deleted as well.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "Delete folder by id.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Folder payload",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Folder"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/info/file": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the metadata of a file by it's ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "Get metadata of file.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "X-Group-Id",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.Bucket": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ErrorReport": {
+            "type": "object",
+            "properties": {
+                "internal_status": {
+                    "description": "Status of the error",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Message of the error",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "Reason of the error",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status of the error",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.File": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "description": "File's id",
+                    "type": "string"
+                },
+                "ancestors": {
+                    "description": "All ancestor folders",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "file_type": {
+                    "description": "The file's extention",
+                    "type": "string"
+                },
+                "folder": {
+                    "description": "Parent folder of the file",
+                    "type": "string"
+                },
+                "meta": {
+                    "description": "File's Metadata",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Meta"
+                        }
+                    ]
+                },
+                "original_title": {
+                    "description": "The file's title before uploading",
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Folder": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "description": "Folder's id",
+                    "type": "string"
+                },
+                "ancestors": {
+                    "description": "Array of ancestors' ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "files": {
+                    "description": "Array of files' ids included",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "folders": {
+                    "description": "Array of folders' ids included",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "meta": {
+                    "description": "Folder's Metadata",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Meta"
+                        }
+                    ]
+                },
+                "parent": {
+                    "description": "Parent's folder id",
+                    "type": "string"
+                }
+            }
+        },
+        "models.FolderList": {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "description": "Keys are file ids and values are the files' metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.Meta"
+                    }
+                },
+                "folders": {
+                    "description": "Keys are folder ids and values are the folders' metadata",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.Meta"
+                    }
+                }
+            }
+        },
+        "models.Meta": {
+            "type": "object",
+            "properties": {
+                "creator": {
+                    "description": "User's ID that created the file",
+                    "type": "string"
+                },
+                "date_creation": {
+                    "description": "Date and time of creation",
+                    "type": "integer"
+                },
+                "descriptions": {
+                    "description": "Array of descriptions for the file",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "read": {
+                    "description": "Array of user ids with reading rights",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "description": "Array of tags for the file",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "description": "Title of the file",
+                    "type": "string"
+                },
+                "update": {
+                    "description": "Array with data that store the updates",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Updated"
+                    }
+                },
+                "write": {
+                    "description": "Array of user ids with writing rights",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.Updated": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "description": "Date and time of update",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "User's id that updated",
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

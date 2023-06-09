@@ -11,9 +11,11 @@ import (
 	"github.com/gorilla/mux"
 	db "github.com/isotiropoulos/storage-api/dbs/meta"
 	objectstorage "github.com/isotiropoulos/storage-api/dbs/objectStorage"
+	_ "github.com/isotiropoulos/storage-api/docs"
 	handle "github.com/isotiropoulos/storage-api/handlers"
-	middleware "github.com/isotiropoulos/storage-api/middleware"
+	"github.com/isotiropoulos/storage-api/middleware"
 	auth "github.com/isotiropoulos/storage-api/oauth"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"honnef.co/go/tools/config"
 )
 
@@ -40,6 +42,23 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 	// return w
 }
 
+// @title BUILSPACE Core Platform Swagger API
+// @version 1.0
+// @description This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
+// @description **Note** that the **X-Group-Id** is a header that is required in all the enpoints.
+// @termsOfService http://swagger.io/terms/
+
+// @SecurityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
+// @contact.name BUILDSPACE Core Platform Support
+// @contact.url http://www.swagger.io/support
+// @contact.email isotiropoulos@singularlogic.eu
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
 func main() {
 	fmt.Println("Starting the application...")
 	objectstorage.Init()
@@ -52,11 +71,9 @@ func main() {
 	if deployment == "" {
 		deployment = "PROD" // "LOCAL", "PROD"
 	}
-
 	// Route handles & endpoints
 	var mid middleware.IAuth = &middleware.AuthImplementation{}
 
-	// Bucket-wise
 	r.HandleFunc("/bucket", mid.AuthMiddleware(handle.MakeBucket)).Methods("POST")
 	r.HandleFunc("/bucket/{id}", mid.AuthMiddleware(handle.DeleteBucket)).Methods("DELETE")
 
@@ -88,6 +105,8 @@ func main() {
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.UpdateFolder)).Methods("PUT")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("id", "{folderId}").Methods("GET")
 	r.HandleFunc("/folder/list", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
+
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	loggedRouter := handlers.LoggingHandler(os.Stdout, r)
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})

@@ -360,7 +360,7 @@ func DeleteFileLocal(w http.ResponseWriter, r *http.Request) {
 func GetFileInfoLocal(w http.ResponseWriter, r *http.Request) {
 
 	fileId := r.FormValue("id")
-	fmt.Println("JASON", fileId)
+
 	// Retrive Object from DB
 	file, err := fileDB.GetOneByID(fileId)
 	if err != nil {

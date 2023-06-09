@@ -1,0 +1,647 @@
+definitions:
+  models.Bucket:
+    properties:
+      name:
+        type: string
+    type: object
+  models.ErrorReport:
+    properties:
+      internal_status:
+        description: Status of the error
+        type: string
+      message:
+        description: Message of the error
+        type: string
+      reason:
+        description: Reason of the error
+        type: string
+      status:
+        description: Status of the error
+        type: integer
+    type: object
+  models.File:
+    properties:
+      _id:
+        description: File's id
+        type: string
+      ancestors:
+        description: All ancestor folders
+        items:
+          type: string
+        type: array
+      file_type:
+        description: The file's extention
+        type: string
+      folder:
+        description: Parent folder of the file
+        type: string
+      meta:
+        allOf:
+        - $ref: '#/definitions/models.Meta'
+        description: File's Metadata
+      original_title:
+        description: The file's title before uploading
+        type: string
+      size:
+        type: integer
+    type: object
+  models.Folder:
+    properties:
+      _id:
+        description: Folder's id
+        type: string
+      ancestors:
+        description: Array of ancestors' ids
+        items:
+          type: string
+        type: array
+      files:
+        description: Array of files' ids included
+        items:
+          type: string
+        type: array
+      folders:
+        description: Array of folders' ids included
+        items:
+          type: string
+        type: array
+      meta:
+        allOf:
+        - $ref: '#/definitions/models.Meta'
+        description: Folder's Metadata
+      parent:
+        description: Parent's folder id
+        type: string
+    type: object
+  models.FolderList:
+    properties:
+      files:
+        additionalProperties:
+          $ref: '#/definitions/models.Meta'
+        description: Keys are file ids and values are the files' metadata
+        type: object
+      folders:
+        additionalProperties:
+          $ref: '#/definitions/models.Meta'
+        description: Keys are folder ids and values are the folders' metadata
+        type: object
+    type: object
+  models.Meta:
+    properties:
+      creator:
+        description: User's ID that created the file
+        type: string
+      date_creation:
+        description: Date and time of creation
+        type: integer
+      descriptions:
+        description: Array of descriptions for the file
+        items:
+          type: string
+        type: array
+      read:
+        description: Array of user ids with reading rights
+        items:
+          type: string
+        type: array
+      tags:
+        description: Array of tags for the file
+        items:
+          type: string
+        type: array
+      title:
+        description: Title of the file
+        type: string
+      update:
+        description: Array with data that store the updates
+        items:
+          $ref: '#/definitions/models.Updated'
+        type: array
+      write:
+        description: Array of user ids with writing rights
+        items:
+          type: string
+        type: array
+    type: object
+  models.Updated:
+    properties:
+      date:
+        description: Date and time of update
+        type: string
+      user:
+        description: User's id that updated
+        type: string
+    type: object
+info:
+  contact:
+    email: isotiropoulos@singularlogic.eu
+    name: BUILDSPACE Core Platform Support
+    url: http://www.swagger.io/support
+  description: |-
+    This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
+    **Note** that the **X-Group-Id** is a header that is required in all the enpoints.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: BUILSPACE Core Platform Swagger API
+  version: "1.0"
+paths:
+  /bucket:
+    post:
+      consumes:
+      - application/json
+      description: Use a Bucket model to create a new bucket.
+      parameters:
+      - description: Bucket payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Bucket'
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Bucket'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Create bucket.
+      tags:
+      - Buckets
+  /bucket/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a bucket based on it's ID.
+      parameters:
+      - description: Bucket Id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Bucket'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Delete bucket with all contents.
+      tags:
+      - Buckets
+  /file:
+    post:
+      consumes:
+      - application/json
+      - application/octet-stream
+      description: |-
+        This is the endopoint to upload files. The files are uploaded using a multipart streaming upload.
+        Step 1 is to select the content-type.
+        - If **application/json** then the request will be sent to initialize the multipart upload. In this case user must pass a **File model as a payload** containing the **folder** and the **original_title** fields. User must also pass the **total** header to specify the number of parts that will be uploaded.
+        - If **application/octet-stream** user must pass the **binary data** (decoded) in the body and also provide the **file ID** and part number parameters.
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      - description: Total parts of multipart upload
+        in: header
+        name: total
+        type: string
+      - description: File ID
+        in: path
+        name: file
+        type: string
+      - description: Number of part
+        in: query
+        name: part
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.File'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Upload a file.
+      tags:
+      - Files
+    put:
+      consumes:
+      - application/json
+      description: |-
+        This is the endopoint to update file meta data. Pass a models.File of the file that will be updated with the updates included.
+        **Note** that this endpoint updates the meta data and not the file contents. To update file contents user must delete int and re-upload it.
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.File'
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.File'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Update a file.
+      tags:
+      - Files
+  /file/{id}:
+    delete:
+      description: This is the endopoint to delete files. The files are deleted based
+        on ther id.
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.File'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Delete file by ID.
+      tags:
+      - Files
+    get:
+      description: |-
+        This is the endopoint to get files. The files are downloaded using a **multipart streaming download**.
+        User provies the file id as well as the part number and receives the decoded and decrypted bytes/
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Number of part
+        in: query
+        name: part
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.File'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Download a file.
+      tags:
+      - Files
+  /folder:
+    get:
+      consumes:
+      - application/json
+      description: Get a folders meta data by the ID. Pass the ID in a query parameter.
+      parameters:
+      - description: Folder ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Folder'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Get folder by id.
+      tags:
+      - Folders
+    post:
+      consumes:
+      - application/json
+      description: Use a Folder model as a payload to create a new folder. Essential
+        fields are meta.title (folder's name) and parent (location).
+      parameters:
+      - description: Folder payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Folder'
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Bucket'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Create a new folder.
+      tags:
+      - Folders
+    put:
+      consumes:
+      - application/json
+      description: Update a folders meta data by the ID. Pass the Folder model with
+        the updates that are needed.
+      parameters:
+      - description: Update body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Folder'
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Folder'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Update folder by ID.
+      tags:
+      - Folders
+  /folder/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Pass folder's id to delete it. Nested items (either files or folders)
+        will be deleted as well.
+      parameters:
+      - description: Folder payload
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Folder'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Delete folder by id.
+      tags:
+      - Folders
+  /folder/list:
+    get:
+      consumes:
+      - application/json
+      description: Get lists of files and folders in a specific folder, by id. Result
+        is a FolderList model
+      parameters:
+      - description: Folder ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FolderList'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: List folder's items.
+      tags:
+      - Folders
+  /info/file:
+    get:
+      description: Returns the metadata of a file by it's ID.
+      parameters:
+      - description: File ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Group ID
+        in: header
+        name: X-Group-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OK
+          schema:
+            items:
+              type: integer
+            type: array
+        "400":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Get metadata of file.
+      tags:
+      - Files
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

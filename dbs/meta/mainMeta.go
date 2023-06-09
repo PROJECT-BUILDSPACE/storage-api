@@ -65,17 +65,20 @@ type IFolderStore interface {
 
 // IStreamStore is a Database Interface for the Sessions
 type IStreamStore interface {
-	// Insert a new file
+	// Insert a new stream
 	InsertOne(stream models.Stream) error
 
-	// // Delete by _id
-	// DeleteOneByID(sessionID string) error
-
+	// Get a stream by ID
 	GetOneByID(streamID string) (models.Stream, error)
 
+	// Get a stream by the related file ID
 	GetOneByFileID(fileID string) (models.Stream, error)
 
+	// Update a stream by ID
 	UpdateWithId(stream models.Stream) (objectStream models.Stream, err error)
+
+	// Delete streams related to a file
+	DeleteManyWithFile(fileId string) error
 }
 
 // FileStore ...
