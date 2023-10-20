@@ -15,7 +15,7 @@ import (
 // IFileStorage is the Jaqpot Client Interface
 type IFileStorage interface {
 	// Make a new bucket
-	MakeBucket(r models.Bucket) (models.BucketInfo, error)
+	MakeBucket(r models.Bucket) (models.Bucket, error)
 
 	// Delete bucket
 	DeleteBucket(bucketId string) error
@@ -63,7 +63,7 @@ func Init() {
 		_accessKeyID = "YHVd2SlQUBNs0xmE"
 	}
 
-	_secretAccessKey := os.Getenv("SECCRET_ACCESS_KEY")
+	_secretAccessKey := os.Getenv("SECRET_ACCESS_KEY")
 	if _secretAccessKey == "" {
 		_secretAccessKey = "GNw0Mzrawq2pFABP7VdV10Zzcdixohe7"
 	}
@@ -88,34 +88,35 @@ func Init() {
 }
 
 // MakeBucket is a function to make a new Bucket.
-func (fileStorage *FileStorage) MakeBucket(bucket models.Bucket) (models.BucketInfo, error) {
+func (fileStorage *FileStorage) MakeBucket(bucket models.Bucket) (models.Bucket, error) {
 
-	existance, err := minioCore.BucketExists(context.Background(), bucket.Name)
+	existance, err := minioCore.BucketExists(context.Background(), bucket.Id)
 	if err != nil {
-		return models.BucketInfo{}, err
+		return models.Bucket{}, err
 	}
 
 	if !existance {
-		err = minioCore.MakeBucket(context.Background(), bucket.Name, minio.MakeBucketOptions{Region: bucket.Name, ObjectLocking: true})
+		err = minioCore.MakeBucket(context.Background(), bucket.Id, minio.MakeBucketOptions{Region: bucket.Id, ObjectLocking: true})
 		if err != nil {
-			return models.BucketInfo{}, err
+			return models.Bucket{}, err
 		}
 	}
 
 	// Get Bucket Info
 	buckets, err := getBuckets()
 	if err != nil {
-		return models.BucketInfo{}, err
+		return models.Bucket{}, err
 	}
 	for _, b := range buckets {
-		if b.Name == bucket.Name {
-			return models.BucketInfo{
-				Name:         b.Name,
+		if b.Name == bucket.Id {
+			return models.Bucket{
+				Id:           b.Name,
+				Name:         bucket.Name,
 				CreationDate: b.CreationDate,
 			}, err
 		}
 	}
-	return models.BucketInfo{}, err
+	return models.Bucket{}, err
 
 }
 

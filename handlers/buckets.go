@@ -24,12 +24,12 @@ import (
 // @Accept json
 // @Produce json
 // @Param body body models.Bucket true "Bucket payload"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Bucket "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /bucket [post]
 // @Security BearerAuth
+// @Security GroupId
 func MakeBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -53,7 +53,7 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if bucket folder exists
-	_, err = folderDB.GetOneByID(req.Name)
+	_, err = folderDB.GetOneByID(req.Id)
 	// if error then folder id doesn't exist!!
 	if err != nil {
 		// Make bucket's main folder
@@ -63,7 +63,7 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 			Description: "Main folder.",
 		}
 
-		postFolder := utils.CreateFolder(folderData, req.Name, nil, req.Name)
+		postFolder := utils.CreateFolder(folderData, req.Id, []string{}, req.Id)
 
 		err = folderDB.InsertOne(postFolder)
 		if err != nil {
@@ -71,6 +71,7 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	json.NewEncoder(w).Encode(info)
 }
 
@@ -81,12 +82,12 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Tags Buckets
 // @Param id path string true "Bucket Id"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Bucket "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /bucket/{id} [delete]
 // @Security BearerAuth
+// @Security GroupId
 func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -147,6 +148,6 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(models.Bucket{
-		Name: bucketId,
+		Id: bucketId,
 	})
 }

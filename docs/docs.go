@@ -30,6 +30,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Use a Bucket model to create a new bucket.",
@@ -52,13 +55,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Bucket"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -88,6 +84,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Delete a bucket based on it's ID.",
@@ -107,13 +106,6 @@ const docTemplate = `{
                         "description": "Bucket Id",
                         "name": "id",
                         "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -144,6 +136,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to update file meta data. Pass a models.File of the file that will be updated with the updates included.\n**Note** that this endpoint updates the meta data and not the file contents. To update file contents user must delete int and re-upload it.",
@@ -166,13 +161,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.File"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -212,6 +200,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to upload files. The files are uploaded using a multipart streaming upload.\nStep 1 is to select the content-type.\n- If **application/json** then the request will be sent to initialize the multipart upload. In this case user must pass a **File model as a payload** containing the **folder** and the **original_title** fields. User must also pass the **total** header to specify the number of parts that will be uploaded.\n- If **application/octet-stream** user must pass the **binary data** (decoded) in the body and also provide the **file ID** and part number parameters.",
@@ -253,13 +244,6 @@ const docTemplate = `{
                         "description": "Number of part",
                         "name": "part",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -301,6 +285,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to get files. The files are downloaded using a **multipart streaming download**.\nUser provies the file id as well as the part number and receives the decoded and decrypted bytes/",
@@ -325,13 +312,6 @@ const docTemplate = `{
                         "name": "part",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -353,6 +333,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to delete files. The files are deleted based on ther id.",
@@ -369,13 +352,6 @@ const docTemplate = `{
                         "description": "File ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -400,6 +376,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Get a folders meta data by the ID. Pass the ID in a query parameter.",
@@ -419,13 +398,6 @@ const docTemplate = `{
                         "description": "Folder ID",
                         "name": "id",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -466,6 +438,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Update a folders meta data by the ID. Pass the Folder model with the updates that are needed.",
@@ -488,13 +463,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Folder"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -534,6 +502,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Use a Folder model as a payload to create a new folder. Essential fields are meta.title (folder's name) and parent (location).",
@@ -556,13 +527,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.Folder"
                         }
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -598,6 +562,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Get lists of files and folders in a specific folder, by id. Result is a FolderList model",
@@ -617,13 +584,6 @@ const docTemplate = `{
                         "description": "Folder ID",
                         "name": "id",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -654,6 +614,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Pass folder's id to delete it. Nested items (either files or folders) will be deleted as well.",
@@ -673,13 +636,6 @@ const docTemplate = `{
                         "description": "Folder payload",
                         "name": "id",
                         "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -722,6 +678,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "GroupId": []
                     }
                 ],
                 "description": "Returns the metadata of a file by it's ID.",
@@ -738,13 +697,6 @@ const docTemplate = `{
                         "description": "File ID",
                         "name": "id",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "X-Group-Id",
-                        "in": "header",
                         "required": true
                     }
                 ],
@@ -969,6 +921,11 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "GroupId": {
+            "type": "apiKey",
+            "name": "X-Group-Id",
+            "in": "header"
         }
     }
 }`
@@ -980,7 +937,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "BUILSPACE Core Platform Swagger API",
-	Description:      "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.\n**Note** that the **X-Group-Id** is a header that is required in all the enpoints.",
+	Description:      "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.\n**Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

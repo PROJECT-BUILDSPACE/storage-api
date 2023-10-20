@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -19,14 +20,16 @@ import (
 // @Produce json
 // @Tags Folders
 // @Param body body models.Folder true "Folder payload"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Bucket "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 409 {object} models.ErrorReport "Conflict"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [post]
 // @Security BearerAuth
+// @Security GroupId
 func PostFolder(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("in")
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -77,11 +80,14 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	folder.Id = folderID
-	folder.Meta.DateCreation = time.Now().Unix()
-	folder.Meta.Update = append(folder.Meta.Update, models.Updated{
-		User: claims.Subject,
-		Date: time.Now(),
-	})
+	folder.Meta.DateCreation = time.Now()
+	// folder.Meta.Update = append(folder.Meta.Update, models.Updated{
+	// 	User: claims.Subject,
+	// 	Date: time.Now(),
+	// })
+	folder.Meta.Update.User = claims.Subject
+	folder.Meta.Update.Date = time.Now()
+
 	var ancestors []string
 
 	if folder.Parent != "" {
@@ -105,6 +111,9 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	folder.Ancestors = ancestors
+	folder.Level = len(ancestors)
+	folder.Size = 0
+	folder.Folders = make([]string, 0)
 
 	err = folderDB.InsertOne(folder)
 	if err != nil {
@@ -149,7 +158,6 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Tags Folders
 // @Param id path string true "Folder payload"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Folder "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 404 {object} models.ErrorReport "Not Found"
@@ -157,6 +165,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder/{id} [delete]
 // @Security BearerAuth
+// @Security GroupId
 func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -274,7 +283,6 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Tags Folders
 // @Param id query string true "Folder ID"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Folder "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 404 {object} models.ErrorReport "Not Found"
@@ -282,6 +290,7 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [get]
 // @Security BearerAuth
+// @Security GroupId
 func GetFolder(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")
@@ -307,6 +316,7 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	fmt.Println(folder)
 	json.NewEncoder(w).Encode(folder)
 }
 
@@ -317,7 +327,6 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Tags Folders
 // @Param body body models.Folder true "Update body"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.Folder "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 404 {object} models.ErrorReport "Not Found"
@@ -325,6 +334,7 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [put]
 // @Security BearerAuth
+// @Security GroupId
 func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -385,10 +395,13 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update folder
-	updateFolder.Meta.Update = append(currentDoc.Meta.Update, models.Updated{
-		User: claims.Subject,
-		Date: time.Now(),
-	})
+	// updateFolder.Meta.Update = append(currentDoc.Meta.Update, models.Updated{
+	// 	User: claims.Subject,
+	// 	Date: time.Now(),
+	// })
+	updateFolder.Meta.Update.User = claims.Subject
+	updateFolder.Meta.Update.Date = time.Now()
+
 	folder, err = folderDB.UpdateWithId(updateFolder)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder.", err.Error(), "FOL0030")
@@ -413,12 +426,12 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Tags Folders
 // @Param id query string true "Folder ID"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.FolderList "OK"
 // @Failure 409 {object} models.ErrorReport "Conflict"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder/list [get]
 // @Security BearerAuth
+// @Security GroupId
 func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")
@@ -431,8 +444,8 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var retObject models.FolderList
-	retObject.Files = make(map[string]models.Meta)
-	retObject.Folders = make(map[string]models.Meta)
+	retObject.Files = []models.File{}
+	retObject.Folders = []models.Folder{}
 
 	// Retrieve files from DB
 	fileCursor, err := fileDB.GetCursorByFolderID(folderID)
@@ -453,7 +466,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &file)
-		retObject.Files[file.Id] = file.Meta
+		retObject.Files = append(retObject.Files, file)
 	}
 
 	// Retrieve folders from DB
@@ -477,8 +490,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &folder)
 
-		retObject.Folders[folder.Id] = folder.Meta
+		retObject.Folders = append(retObject.Folders, folder)
 	}
-
 	json.NewEncoder(w).Encode(retObject)
 }

@@ -33,11 +33,16 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	headers := w.Header()
 	headers.Add("Access-Control-Allow-Origin", "*")
-	headers.Add("Vary", "Origin")
+	// headers.Add("Vary", "Origin")
 	headers.Add("Vary", "Access-Control-Request-Method")
 	headers.Add("Vary", "Access-Control-Request-Headers")
-	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token, Authorization, Client-id, Client-secret, Total, total")
-	headers.Add("Access-Control-Allow-Methods", "GET, PUT, DELETE, POST,OPTIONS")
+	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token, Authorization, X-Group-Id, Total, total")
+	headers.Add("Access-Control-Allow-Methods", "GET, PUT, DELETE, POST, OPTIONS")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	json.NewEncoder(w)
 	// return w
 }
@@ -45,12 +50,16 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 // @title BUILSPACE Core Platform Swagger API
 // @version 1.0
 // @description This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
-// @description **Note** that the **X-Group-Id** is a header that is required in all the enpoints.
+// @description **Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.
 // @termsOfService http://swagger.io/terms/
 
 // @SecurityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+
+// @SecurityDefinitions.apikey GroupId
+// @in header
+// @name X-Group-Id
 
 // @contact.name BUILDSPACE Core Platform Support
 // @contact.url http://www.swagger.io/support
@@ -74,27 +83,27 @@ func main() {
 	// Route handles & endpoints
 	var mid middleware.IAuth = &middleware.AuthImplementation{}
 
-	r.HandleFunc("/bucket", mid.AuthMiddleware(handle.MakeBucket)).Methods("POST")
+	r.HandleFunc("/bucket", mid.NaiveAuthMiddleware(handle.MakeBucket)).Methods("POST")
 	r.HandleFunc("/bucket/{id}", mid.AuthMiddleware(handle.DeleteBucket)).Methods("DELETE")
 
 	// File-wise
 	if deployment == "PROD" {
 		r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFile)).Methods("POST")
 		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.PostFile)).Queries("part", "{partNum}").Methods("POST")
-		r.HandleFunc("/info/file", mid.AuthMiddleware(handle.GetFileInfo)).Queries("id", "{fileId}").Methods("GET")
+		r.HandleFunc("/file/info/{id}", mid.AuthMiddleware(handle.GetFileInfo)).Methods("GET")
 		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFile)).Queries("part", "{partNum}").Methods("GET")
 		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFile)).Methods("DELETE")
 		r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFile)).Methods("PUT")
 		r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFile)).Methods("POST")
 		r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFile)).Methods("PUT")
 	} else if deployment == "LOCAL" {
-		r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFileLocal)).Methods("POST")
-		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFileLocal)).Methods("GET")
-		r.HandleFunc("/info/file", mid.AuthMiddleware(handle.GetFileInfoLocal)).Queries("id", "{fileId}").Methods("GET")
-		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFileLocal)).Methods("DELETE")
-		r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFileLocal)).Methods("PUT")
-		r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFileLocal)).Methods("POST")
-		r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFileLocal)).Methods("PUT")
+		// r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFileLocal)).Methods("POST")
+		// r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFileLocal)).Methods("GET")
+		// r.HandleFunc("/info/file", mid.AuthMiddleware(handle.GetFileInfoLocal)).Queries("id", "{fileId}").Methods("GET")
+		// r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFileLocal)).Methods("DELETE")
+		// r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFileLocal)).Methods("PUT")
+		// r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFileLocal)).Methods("POST")
+		// r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFileLocal)).Methods("PUT")
 	} else {
 		log.Panicln("Deployment " + deployment + " not supprted. Please select PROD or LOCAL. If still in doubt contact the BUILDSPACE Support Team.")
 	}

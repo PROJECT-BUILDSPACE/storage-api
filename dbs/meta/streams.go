@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/isotiropoulos/storage-api/models"
+	"github.com/minio/minio-go/v7"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -42,12 +43,24 @@ func (streamstore *StreamStore) UpdateWithId(stream models.Stream) (objUpdated m
 	update := bson.M{
 		"$set": bson.M{
 			"file_id": stream.FileID,
-			"parts":   stream.Parts,
 			"status":  stream.Status,
 		},
 	}
 	_, erro := db.Collection(STREAMSCOLLECTION).UpdateOne(context.TODO(), filter, update)
 	return stream, erro
+}
+
+// db.getCollection("streams").updateOne({"_id":"ZTQ3YjQ5YTgtZGE1OC00OGEzLWIxZDgtMGYxOWIyMmRiOWNiLmZkYzQ1YmE3LTE4NWItNDQ2My04NjliLTQ4NzI0OTUyMmVlOA" },{ $set: { 'parts.0' : "json"}})
+// UpdateInArrayByIdAndIndex is to update a particular stream's part.
+func (streamstore *StreamStore) UpdateInArrayByIdAndIndex(streamId string, index string, part minio.CompletePart) (err error) {
+	filter := bson.M{"_id": streamId}
+	update := bson.M{
+		"$set": bson.M{
+			"parts." + index: part,
+		},
+	}
+	_, erro := db.Collection(STREAMSCOLLECTION).UpdateOne(context.TODO(), filter, update)
+	return erro
 }
 
 // DeleteManyWithFile is to delete many streams related to the same file.

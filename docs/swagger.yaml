@@ -139,7 +139,7 @@ info:
     url: http://www.swagger.io/support
   description: |-
     This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
-    **Note** that the **X-Group-Id** is a header that is required in all the enpoints.
+    **Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -159,11 +159,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.Bucket'
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -181,6 +176,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Create bucket.
       tags:
       - Buckets
@@ -195,11 +191,6 @@ paths:
         name: id
         required: true
         type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -217,6 +208,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Delete bucket with all contents.
       tags:
       - Buckets
@@ -249,11 +241,6 @@ paths:
         in: query
         name: part
         type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -279,6 +266,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Upload a file.
       tags:
       - Files
@@ -295,11 +283,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.File'
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -325,6 +308,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Update a file.
       tags:
       - Files
@@ -336,11 +320,6 @@ paths:
       - description: File ID
         in: path
         name: id
-        required: true
-        type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
         required: true
         type: string
       produces:
@@ -356,6 +335,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Delete file by ID.
       tags:
       - Files
@@ -374,11 +354,6 @@ paths:
         name: part
         required: true
         type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/octet-stream
       responses:
@@ -392,6 +367,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Download a file.
       tags:
       - Files
@@ -404,11 +380,6 @@ paths:
       - description: Folder ID
         in: query
         name: id
-        required: true
-        type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
         required: true
         type: string
       produces:
@@ -436,6 +407,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Get folder by id.
       tags:
       - Folders
@@ -451,11 +423,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.Folder'
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -477,6 +444,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Create a new folder.
       tags:
       - Folders
@@ -492,11 +460,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.Folder'
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -522,6 +485,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Update folder by ID.
       tags:
       - Folders
@@ -537,11 +501,6 @@ paths:
         name: id
         required: true
         type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -567,6 +526,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Delete folder by id.
       tags:
       - Folders
@@ -580,11 +540,6 @@ paths:
       - description: Folder ID
         in: query
         name: id
-        required: true
-        type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
         required: true
         type: string
       produces:
@@ -604,6 +559,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: List folder's items.
       tags:
       - Folders
@@ -614,11 +570,6 @@ paths:
       - description: File ID
         in: query
         name: id
-        required: true
-        type: string
-      - description: Group ID
-        in: header
-        name: X-Group-Id
         required: true
         type: string
       produces:
@@ -636,6 +587,7 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
+      - GroupId: []
       summary: Get metadata of file.
       tags:
       - Files
@@ -643,5 +595,9 @@ securityDefinitions:
   BearerAuth:
     in: header
     name: Authorization
+    type: apiKey
+  GroupId:
+    in: header
+    name: X-Group-Id
     type: apiKey
 swagger: "2.0"

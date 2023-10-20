@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/isotiropoulos/storage-api/models"
+	"github.com/minio/minio-go/v7"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -50,11 +51,17 @@ type IFolderStore interface {
 	// Get file with params
 	GetOneByID(folderID string) (models.Folder, error)
 
+	// Get root by name
+	GetRootByName(folderName string) (models.Folder, error)
+
 	// Get many with DatasetID
 	GetCursorByParent(parentID string) (*mongo.Cursor, error)
 
 	// Update Files field of a folder
 	UpdateFiles(fileId string, folderID string) error
+
+	// UpdateAncestorSize is a function to update the size of the folder's ancestors
+	UpdateAncestorSize(ancestors []string, size int64) error
 
 	// UpdateMetaAncestors is a function to add to the []Updated when changes happen to all acestores
 	UpdateMetaAncestors(ancestors []string, userID string) error
@@ -79,6 +86,28 @@ type IStreamStore interface {
 
 	// Delete streams related to a file
 	DeleteManyWithFile(fileId string) error
+
+	// UpdateInArrayByIdAndIndex is to update a particular stream's part.
+	UpdateInArrayByIdAndIndex(streamId string, index string, part minio.CompletePart) (err error)
+}
+
+// IPartStore is a Database Interface for the Sessions
+type IPartStore interface {
+
+	// Insert a new stream
+	InsertOne(part models.Part) error
+
+	// Get a part by ID
+	GetOneByID(partID string) (models.Part, error)
+
+	// Get a cusror of parts by file ID
+	GetCursorByFileID(fileID string) (*mongo.Cursor, error)
+
+	// Get a cusror of parts by stream ID
+	GetCursorByStreamID(streamID string) (*mongo.Cursor, error)
+
+	// Delete streams related to a stream
+	DeleteManyWithStream(streamId string) error
 }
 
 // FileStore ...
@@ -89,6 +118,9 @@ type FolderStore struct{}
 
 // StreamStore ...
 type StreamStore struct{}
+
+// PartStore ...
+type PartStore struct{}
 
 // db is a Client of mongoDB
 var db *mongo.Database

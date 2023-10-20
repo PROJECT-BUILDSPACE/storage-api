@@ -62,15 +62,17 @@ func CreateFolder(r models.PostFolderBody, folderID string, ancestors []string, 
 	var dbFolder models.Folder
 
 	meta.Creator = userID
-	meta.Descriptions = append(meta.Descriptions, r.Description)
+	meta.Description = r.Description
 	meta.Title = r.FolderName
-	meta.DateCreation = time.Now().UnixNano()
+	meta.DateCreation = time.Now()
 	meta.Read = append(meta.Read, userID)
 	meta.Write = append(meta.Write, userID)
-	meta.Update = append(meta.Update, models.Updated{
-		Date: time.Now(),
-		User: userID,
-	})
+	// meta.Update = append(meta.Update, models.Updated{
+	// 	Date: time.Now(),
+	// 	User: userID,
+	// })
+	meta.Update.Date = time.Now()
+	meta.Update.User = userID
 
 	if r.Parent != "" && r.Parent != ancestors[0] {
 		dbFolder = models.Folder{
@@ -80,6 +82,7 @@ func CreateFolder(r models.PostFolderBody, folderID string, ancestors []string, 
 			Ancestors: append(ancestors, r.Parent),
 			Files:     []string{},
 			Folders:   []string{},
+			Size:      0,
 		}
 	} else {
 		dbFolder = models.Folder{
@@ -89,6 +92,7 @@ func CreateFolder(r models.PostFolderBody, folderID string, ancestors []string, 
 			Ancestors: ancestors,
 			Files:     []string{},
 			Folders:   []string{},
+			Size:      0,
 		}
 	}
 

@@ -40,6 +40,13 @@ func (folderstore *FolderStore) GetOneByID(folderID string) (models.Folder, erro
 	return folder, err
 }
 
+// GetOneByID is to get a folder by ID.
+func (folderstore *FolderStore) GetRootByName(folderName string) (models.Folder, error) {
+	var folder models.Folder
+	err := db.Collection(FOLDERSSCOLLECTION).FindOne(context.Background(), bson.M{"meta.title": folderName, "ancestors": nil}).Decode(&folder)
+	return folder, err
+}
+
 // GetCursorByParent is to get a cursor with folders in a particular parent folder.
 func (folderstore *FolderStore) GetCursorByParent(parentID string) (*mongo.Cursor, error) {
 
@@ -55,9 +62,9 @@ func (folderstore *FolderStore) UpdateFiles(fileId string, folderID string) erro
 func (folderstore *FolderStore) UpdateWithId(folder models.Folder) (folderUpdated models.Folder, err error) {
 	filter := bson.M{"_id": folder.Id}
 	// NEVER more than 25
-	if len(folder.Meta.Update) >= 25 {
-		folder.Meta.Update = folder.Meta.Update[len(folder.Meta.Update)-24:]
-	}
+	// if len(folder.Meta.Update) >= 25 {
+	// 	folder.Meta.Update = folder.Meta.Update[len(folder.Meta.Update)-24:]
+	// }
 	update := bson.M{
 		"$set": bson.M{
 			"meta":      folder.Meta,
@@ -65,6 +72,7 @@ func (folderstore *FolderStore) UpdateWithId(folder models.Folder) (folderUpdate
 			"parent":    folder.Parent,
 			"files":     folder.Files,
 			"folders":   folder.Folders,
+			"size":      folder.Size,
 		},
 	}
 
@@ -102,16 +110,52 @@ func (folderstore *FolderStore) UpdateMetaAncestors(ancestors []string, userID s
 			// Change the update meta
 			// NEVER mere than 25 stored updates
 			newMeta = folder.Meta
-			if len(newMeta.Update) == 25 {
-				// Remove the first item from the array
-				newMeta.Update = newMeta.Update[1:]
-			}
-			newMeta.Update = append(newMeta.Update, models.Updated{
-				User: userID,
-				Date: time.Now(),
-			})
+			// if len(newMeta.Update) == 25 {
+			// 	// Remove the first item from the array
+			// 	newMeta.Update = newMeta.Update[1:]
+			// }
+			// newMeta.Update = append(newMeta.Update, models.Updated{
+			// 	User: userID,
+			// 	Date: time.Now(),
+			// })
+			newMeta.Update.User = userID
+			newMeta.Update.Date = time.Now()
 
 			_, err := db.Collection(FOLDERSSCOLLECTION).UpdateOne(context.Background(), bson.M{"_id": folder.Id}, bson.D{{"$set", bson.M{"meta": newMeta}}})
+			if err != nil {
+				break
+			}
+		}
+	}
+
+	return err
+}
+
+// UpdateAncestorSize is a function to update the size of the folder's ancestors
+func (folderstore *FolderStore) UpdateAncestorSize(ancestors []string, size int64) error {
+
+	//Get the folder
+	cursor, err := getOneWithancestors(ancestors)
+
+	if err == nil {
+		defer cursor.Close(context.Background())
+
+		for cursor.Next(context.Background()) {
+
+			var result bson.M
+			var folder models.Folder
+
+			if err = cursor.Decode(&result); err != nil {
+				panic(err)
+			}
+
+			bsonBytes, _ := bson.Marshal(result)
+			bson.Unmarshal(bsonBytes, &folder)
+
+			// Change the size
+			newSize := folder.Size + size
+
+			_, err := db.Collection(FOLDERSSCOLLECTION).UpdateOne(context.Background(), bson.M{"_id": folder.Id}, bson.D{{"$set", bson.M{"size": newSize}}})
 			if err != nil {
 				break
 			}

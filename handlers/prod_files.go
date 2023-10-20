@@ -37,7 +37,6 @@ import (
 // @Param total header string false "Total parts of multipart upload"
 // @Param file path string false "File ID"
 // @Param part query string false "Number of part"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.File "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 404 {object} models.ErrorReport "Not Found"
@@ -45,6 +44,7 @@ import (
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /file [post]
 // @Security BearerAuth
+// @Security GroupId
 func PostFile(w http.ResponseWriter, r *http.Request) {
 
 	var content = r.Header.Get("Content-Type")
@@ -70,98 +70,187 @@ func handleJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	partClose := r.FormValue("part")
 	var postFile models.File
 
-	// Get new file's ID
-	fileID, err := utils.GenerateUUID()
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating file's ID.", err.Error(), "FIL0003")
-		return
+	if partClose == "close" {
+
+		params := mux.Vars(r) // Gets params
+		fileID := params["id"]
+
+		// Retrive Objects from DB
+		postFile, err = fileDB.GetOneByID(fileID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusNotFound, "Could not find file.", err.Error(), "FIL0066")
+			return
+		}
+
+		folder, err := folderDB.GetOneByID(postFile.FolderID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusNotFound, "Could not find file.", err.Error(), "FIL0074")
+			return
+		}
+
+		stream, err := streamDB.GetOneByFileID(fileID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusNotFound, "Could not find stream.", err.Error(), "FIL0068")
+		}
+
+		// Fetch part documets
+		multiParts := make([]minio.CompletePart, stream.Total)
+
+		partCursor, err := partsDB.GetCursorByStreamID(stream.Id)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain parts.", err.Error(), "FIL0072")
+			return
+		}
+		defer partCursor.Close(context.Background())
+
+		for partCursor.Next(context.Background()) {
+			var result bson.M
+			var midPart models.Part
+			if err := partCursor.Decode(&result); err != nil {
+				utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FIL0073")
+				return
+			}
+			bsonBytes, _ := bson.Marshal(result)
+			bson.Unmarshal(bsonBytes, &midPart)
+			// Update size of file
+			postFile.Size = postFile.Size + midPart.Size
+			// Keep in mind indicing!
+			multiParts[midPart.PartNumber-1] = midPart.Part
+		}
+
+		if _, err = storage.CloseMultipart(bucketID, fileID, stream.Id, multiParts); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not close multipart upload.", err.Error(), "FIL0069")
+			return
+		}
+
+		// Update size of file and necessary folders
+		postFile, err = fileDB.UpdateWithId(postFile)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusConflict, "Could not update size.", err.Error(), "FIL0016")
+			return
+		}
+
+		// Update folder size and ancestors' size
+		folder.Size = folder.Size + postFile.Size
+		folder, err = folderDB.UpdateWithId(folder)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not update folder.", err.Error(), "FIL0017")
+			return
+		}
+
+		err = folderDB.UpdateAncestorSize(folder.Ancestors, postFile.Size)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not update ancestors' size.", err.Error(), "FIL0067")
+			return
+		}
+
+		// Final update of stream
+		stream.Status = "Completed"
+		stream, err = streamDB.UpdateWithId(stream)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not update stream.", err.Error(), "FIL0070")
+			return
+		}
+	} else {
+		// Get new file's ID
+		fileID, err := utils.GenerateUUID()
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating file's ID.", err.Error(), "FIL0003")
+			return
+		}
+
+		// Get totalPartsCount from headers
+		totalPartsCount, err := strconv.Atoi(r.Header.Get("total"))
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not get the parts of the file.", err.Error(), "FIL0004")
+			return
+		}
+
+		// postFile is the document of the file for DB
+		// Contains: Original Title (with Type)
+		err = json.NewDecoder(r.Body).Decode(&postFile)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not decode request body.", err.Error(), "FIL0005")
+			return
+		}
+		postFile.Id = fileID
+
+		// Initiate multipart upload
+		uploadID, err := storage.OpenMultipart(bucketID, postFile.Id)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Error in opening multipart upload.", err.Error(), "FIL0006")
+			return
+		}
+
+		// Create a slice of channels to hold upload results
+		// var partsCh []minio.CompletePart
+		// partsCh := make([]minio.CompletePart, totalPartsCount)
+
+		stream := models.Stream{
+			Id:     uploadID,
+			FileID: fileID,
+			Total:  totalPartsCount,
+			Status: "Pending",
+		}
+
+		// Insert Stream in DB
+		err = streamDB.InsertOne(stream)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "FIL0007")
+			return
+		}
+
+		// Insert file doc in DB
+		base := filepath.Base(postFile.OriginalTitle)
+		ext := filepath.Ext(base)
+		// title := base[:len(base)-len(ext)]
+		postFile.Meta.DateCreation = time.Now()
+		// postFile.Meta.Title = title
+		postFile.FileType = ext
+		// postFile.OriginalTitle = title
+		postFile.Size = 0
+		postFile.Meta.Creator = claims.Subject
+		folder, err := folderDB.GetOneByID(postFile.FolderID)
+		if err != nil || folder.Id == "" {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0008")
+			return
+		}
+		postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
+		postFile.Meta.Read = folder.Meta.Read
+		postFile.Meta.Write = folder.Meta.Write
+		// postFile.Meta.Update = append(postFile.Meta.Update, models.Updated{
+		// 	User: claims.Subject,
+		// 	Date: time.Now(),
+		// })
+
+		postFile.Meta.Update.Date = time.Now()
+		postFile.Meta.Update.User = claims.Subject
+
+		err = fileDB.InsertOne(postFile)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "FIL0009")
+			return
+		}
+
+		// Update parent folder
+		err = folderDB.UpdateFiles(postFile.Id, postFile.FolderID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0010")
+			return
+		}
+
+		// Update ancestore's meta
+		err = folderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "FIL0011")
+			return
+		}
+
 	}
 
-	// Get totalPartsCount from headers
-	totalPartsCount, err := strconv.Atoi(r.Header.Get("total"))
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not get the parts of the file.", err.Error(), "FIL0004")
-		return
-	}
-
-	// postFile is the document of the file for DB
-	// Contains: Original Title (with Type), Size
-	err = json.NewDecoder(r.Body).Decode(&postFile)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not decode request body.", err.Error(), "FIL0005")
-		return
-	}
-	postFile.Id = fileID
-
-	// Initiate multipart upload
-	uploadID, err := storage.OpenMultipart(bucketID, postFile.Id)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in opening multipart upload.", err.Error(), "FIL0006")
-		return
-	}
-
-	// Create a slice of channels to hold upload results
-	var partsCh []minio.CompletePart
-
-	stream := models.Stream{
-		Id:     uploadID,
-		FileID: fileID,
-		Parts:  partsCh,
-		Total:  totalPartsCount,
-		Status: "Pending",
-	}
-
-	// Insert Stream in DB
-	err = streamDB.InsertOne(stream)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "FIL0007")
-		return
-	}
-
-	// Insert file doc in DB
-	base := filepath.Base(postFile.OriginalTitle)
-	ext := filepath.Ext(base)
-	title := base[:len(base)-len(ext)]
-	postFile.Meta.DateCreation = time.Now().Unix()
-	postFile.Meta.Title = title
-	postFile.FileType = ext
-	postFile.OriginalTitle = title
-	postFile.Size = 0
-	postFile.Meta.Creator = claims.Subject
-	folder, err := folderDB.GetOneByID(postFile.FolderID)
-	if err != nil || folder.Id == "" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0008")
-		return
-	}
-	postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
-	postFile.Meta.Read = folder.Meta.Read
-	postFile.Meta.Write = folder.Meta.Write
-	postFile.Meta.Update = append(postFile.Meta.Update, models.Updated{
-		User: claims.Subject,
-		Date: time.Now(),
-	})
-
-	err = fileDB.InsertOne(postFile)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "FIL0009")
-		return
-	}
-
-	// Update parent folder
-	err = folderDB.UpdateFiles(postFile.Id, postFile.FolderID)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0010")
-		return
-	}
-
-	// Update ancestore's meta
-	err = folderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "FIL0011")
-		return
-	}
 	json.NewEncoder(w).Encode(postFile)
 }
 
@@ -196,25 +285,38 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find stream.", err.Error(), "FIL0064")
 	}
 
-	// Make updates in document
-	var filePart models.Part
-	filePart.FileID = fileId
-	filePart.StreamID = stream.Id
-	filePart.PartNumber, err = strconv.Atoi(partNum)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not get the part number.", err.Error(), "FIL0014")
+	folder, err := folderDB.GetOneByID(file.FolderID)
+	if err != nil || folder.Id == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0065")
 		return
 	}
-	filePart.Part = partBytes
 
-	// Initiate a new part upload
-	opt := models.ObjectPartInfo{
-		PartNumber: filePart.PartNumber,
+	// Make updates in document
+	var filePart models.Part
+	partId, err := utils.GenerateUUID()
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating part's ID.", err.Error(), "FIL0071")
+		return
 	}
 
 	// Convert bytes.Buffer to io.Reader
 	partReader := bytes.NewReader(partBytes)
 	size := len(partBytes)
+
+	filePart.Id = partId
+	filePart.FileID = fileId
+	filePart.StreamID = stream.Id
+	filePart.Size = int64(size)
+	filePart.PartNumber, err = strconv.Atoi(partNum)
+
+	// Initiate a new part upload
+	opt := models.ObjectPartInfo{
+		PartNumber: filePart.PartNumber,
+	}
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not get the part number.", err.Error(), "FIL0014")
+		return
+	}
 
 	// Upload part
 	part, err := storage.PostPart(bucketID, stream.FileID, filePart.StreamID, opt.PartNumber, partReader, int64(size), minio.PutObjectPartOptions{})
@@ -223,35 +325,17 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update overall size, and then document
-	file.Size = file.Size + int64(size)
-	file, err = fileDB.UpdateWithId(file)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusConflict, "Could not update size.", err.Error(), "FIL0016")
-		return
-	}
-
-	// Update stream document
+	// Insert part document
 	objectPart := minio.CompletePart{
 		PartNumber: part.PartNumber,
 		ETag:       part.ETag,
 	}
 
-	stream.Parts = append(stream.Parts, objectPart)
-	if stream.Total == len(stream.Parts) {
-		stream.Status = "Completed"
-	}
-	stream, err = streamDB.UpdateWithId(stream)
+	filePart.Part = objectPart
+	err = partsDB.InsertOne(filePart)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not update stream.", err.Error(), "FIL0017")
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not insert part document.", err.Error(), "FIL0018")
 		return
-	}
-
-	if stream.Status == "Completed" {
-		if _, err = storage.CloseMultipart(bucketID, file.Id, stream.Id, stream.Parts); err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could not close multipart upload.", err.Error(), "FIL0018")
-			return
-		}
 	}
 
 	json.NewEncoder(w).Encode(file)
@@ -263,15 +347,16 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 // @Tags Files
 // @Produce json
 // @Param id query string true "File ID"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 202 {array} byte "OK"
 // @Failure 400 {object} models.ErrorReport "Not Found"
 // @Router /info/file [get]
 // @Security BearerAuth
+// @Security GroupId
 func GetFileInfo(w http.ResponseWriter, r *http.Request) {
 
-	fileId := r.FormValue("id")
-
+	// fileId := r.FormValue("id")
+	params := mux.Vars(r) // Gets params
+	fileId := params["id"]
 	// Retrive Object from DB
 	file, err := fileDB.GetOneByID(fileId)
 	if err != nil {
@@ -294,11 +379,11 @@ func GetFileInfo(w http.ResponseWriter, r *http.Request) {
 // @Produce octet-stream
 // @Param id path string true "File ID"
 // @Param part query string true "Number of part"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 202 {object} models.File "Accepted"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Router /file/{id} [get]
 // @Security BearerAuth
+// @Security GroupId
 func GetFile(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve group
@@ -357,11 +442,11 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 // @Tags Files
 // @Produce json
 // @Param id path string true "File ID"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 202 {object} models.File "Accepted"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Router /file/{id} [delete]
 // @Security BearerAuth
+// @Security GroupId
 func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -410,6 +495,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	newFiles := utils.RemoveFromSlice(parentFolder.Files, params["id"])
 
 	parentFolder.Files = newFiles
+	parentFolder.Size = parentFolder.Size - file.Size
 	// Pass new values
 
 	// Update Parent
@@ -443,7 +529,6 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param body body models.File  true "Request body"
-// @Param X-Group-Id header string true "Group ID"
 // @Success 200 {object} models.File "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 404 {object} models.ErrorReport "Not Found"
@@ -451,6 +536,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /file [put]
 // @Security BearerAuth
+// @Security GroupId
 func UpdateFile(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -511,10 +597,13 @@ func UpdateFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update folder
-	updateFile.Meta.Update = append(currentDoc.Meta.Update, models.Updated{
-		User: claims.Subject,
-		Date: time.Now(),
-	})
+	// updateFile.Meta.Update = append(currentDoc.Meta.Update, models.Updated{
+	// 	User: claims.Subject,
+	// 	Date: time.Now(),
+	// })
+	updateFile.Meta.Update.Date = time.Now()
+	updateFile.Meta.Update.User = claims.Subject
+
 	file, err = fileDB.UpdateWithId(updateFile)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder.", err.Error(), "FIL0039")
@@ -598,7 +687,10 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 		User: claims.Subject,
 		Date: time.Now(),
 	}
-	file.Meta.Update = []models.Updated{updated}
+	// file.Meta.Update = []models.Updated{updated}
+	file.Meta.Update.User = updated.User
+	file.Meta.Update.Date = updated.Date
+
 	file.Meta.Title = newName
 	file.Id, err = utils.GenerateUUID()
 	if err != nil {
@@ -622,7 +714,10 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 
 	// Update New Parent Folder
 	newParent.Files = append(newParent.Files, file.Id)
-	newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	// newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	newParent.Meta.Update.User = updated.User
+	newParent.Meta.Update.Date = updated.Date
+
 	_, err = folderDB.UpdateWithId(newParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
@@ -725,7 +820,10 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 		User: claims.Subject,
 		Date: time.Now(),
 	}
-	file.Meta.Update = []models.Updated{updated}
+	// file.Meta.Update = []models.Updated{updated}
+	file.Meta.Update.User = updated.User
+	file.Meta.Update.Date = updated.Date
+
 	file.Meta.Title = newName
 	ancestors := append(newParent.Ancestors, file.FolderID)
 	file.Ancestors = ancestors
@@ -737,7 +835,9 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 
 	// Update New Parent Folder
 	newParent.Files = append(newParent.Files, file.Id)
-	newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	// newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	newParent.Meta.Update.User = updated.User
+	newParent.Meta.Update.Date = updated.Date
 	_, err = folderDB.UpdateWithId(newParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0063")

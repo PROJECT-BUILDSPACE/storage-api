@@ -22,12 +22,7 @@ type OidcClaims struct {
 
 // Bucket struct
 type Bucket struct {
-	Name string `json:"name"`
-	// Location string `json:"location"`
-}
-
-// BucketInfo container for bucket metadata.
-type BucketInfo struct {
+	Id           string    `json:"_id"`
 	Name         string    `json:"name"`
 	CreationDate time.Time `json:"creation_date"`
 }
@@ -41,13 +36,13 @@ type ObjectPartInfo struct {
 // Meta contains Metadata of JADS files
 type Meta struct {
 	Creator      string    `json:"creator" bson:"creator"`             // User's ID that created the file
-	Descriptions []string  `json:"descriptions" bson:"descriptions"`   // Array of descriptions for the file
+	Description  string    `json:"description" bson:"description"`     // Array of descriptions for the file
 	Title        string    `json:"title" bson:"title"`                 // Title of the file
-	DateCreation int64     `json:"date_creation" bson:"date_creation"` // Date and time of creation
+	DateCreation time.Time `json:"date_creation" bson:"date_creation"` // Date and time of creation
 	Read         []string  `json:"read" bson:"read"`                   // Array of user ids with reading rights
 	Write        []string  `json:"write" bson:"write"`                 // Array of user ids with writing rights
 	Tags         []string  `json:"tags" bson:"tags"`                   // Array of tags for the file
-	Update       []Updated `json:"update" bson:"update"`               // Array with data that store the updates
+	Update       Updated   `json:"update" bson:"update"`               // Array with data that store the updates
 }
 
 // Updated contains information about the versions of an file
@@ -70,20 +65,20 @@ type File struct {
 
 // Stream contains information about a file's stream.
 type Stream struct {
-	Id     string               `json:"_id" bson:"_id"`         // Stream's id
-	FileID string               `json:"file_id" bson:"file_id"` // Corresponding File ID
-	Parts  []minio.CompletePart `json:"parts" bson:"parts"`     // All parts relevant to this stream
-	Total  int                  `json:"total" bson:"total"`
-	Status string               `json:"status" bson:"status"` // Status of the stream
+	Id     string `json:"_id" bson:"_id"`         // Stream's id
+	FileID string `json:"file_id" bson:"file_id"` // Corresponding File ID
+	Total  int    `json:"total" bson:"total"`
+	Status string `json:"status" bson:"status"` // Status of the stream
 }
 
 // Part contains information about a file's stream.
 type Part struct {
-	Id         string `json:"_id" bson:"_id"`                 // Part's id
-	PartNumber int    `json:"part_number" bson:"part_number"` // Parts's Number
-	StreamID   string `json:"stream_id" bson:"stream_id"`     // Corresponding Stream ID
-	FileID     string `json:"file_id" bson:"file_id"`         // Corresponding File ID
-	Part       []byte `json:"part" bson:"part"`
+	Id         string             `json:"_id" bson:"_id"`                 // Part's id
+	PartNumber int                `json:"part_number" bson:"part_number"` // Parts's Number
+	StreamID   string             `json:"stream_id" bson:"stream_id"`     // Corresponding Stream ID
+	FileID     string             `json:"file_id" bson:"file_id"`         // Corresponding File ID
+	Size       int64              `json:"size" bson:"size"`               // Corresponding Part's size
+	Part       minio.CompletePart `json:"actual_part" bson:"actual_part"` // Actual Complete part
 }
 
 type FilePart struct {
@@ -121,6 +116,8 @@ type Folder struct {
 	Ancestors []string `json:"ancestors" bson:"ancestors"` // Array of ancestors' ids
 	Files     []string `json:"files" bson:"files"`         // Array of files' ids included
 	Folders   []string `json:"folders" bson:"folders"`     // Array of folders' ids included
+	Level     int      `json:"level" bson:"level"`         // Level of the folder (root is level 0 etc..)
+	Size      int64    `json:"size" bson:"size"`           // Size of a folder (cumulative size of folder's items)
 }
 
 // PostFolderBody is the body of a postFolder request.
@@ -137,8 +134,8 @@ type PostFolderBody struct {
 
 // FolderList is a list of items in folder.
 type FolderList struct {
-	Files   map[string]Meta `json:"files"`   // Keys are file ids and values are the files' metadata
-	Folders map[string]Meta `json:"folders"` // Keys are folder ids and values are the folders' metadata
+	Files   []File   `json:"files"`   // Keys are file ids and values are the files' metadata
+	Folders []Folder `json:"folders"` // Keys are folder ids and values are the folders' metadata
 }
 
 // CopyMoveBody is the body of an copy or move request
