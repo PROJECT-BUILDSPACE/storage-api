@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	models "github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
-	"go.mongodb.org/mongo-driver/bson"
 	// "BUILDSPACE-api/utils"
 	// "github.com/gorilla/mux"
 )
@@ -29,7 +27,6 @@ import (
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /bucket [post]
 // @Security BearerAuth
-// @Security GroupId
 func MakeBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -87,7 +84,6 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /bucket/{id} [delete]
 // @Security BearerAuth
-// @Security GroupId
 func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -113,40 +109,24 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 	// Delete root folder
 	err = folderDB.DeleteOneByID(bucketId)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's root folder.", err.Error(), "BUC0005")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's root folder.", err.Error(), "BUC0008")
 		return
 	}
 
-	// Get file IDs to match streams
-	fileCursor, err := fileDB.GetCursorByAncestors(bucketId)
+	// Delete parts
+	err = partsDB.DeleteManyWithBucket(bucketId)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not find bucket's files.", err.Error(), "BUC0006")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's parts.", err.Error(), "BUC0006")
 		return
 	}
-	defer fileCursor.Close(context.Background())
-	for fileCursor.Next(context.Background()) {
-		var result bson.M
-		var file models.File
-		if err := fileCursor.Decode(&result); err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "BUC0007")
-			return
-		}
-		bsonBytes, _ := bson.Marshal(result)
-		bson.Unmarshal(bsonBytes, &file)
 
-		err = streamDB.DeleteManyWithFile(file.Id)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete stream.", err.Error(), "BUC0008")
-			return
-		}
-	}
-
-	// Delete nested files
+	// Delete files
 	err = fileDB.DeleteManyWithAncestore(bucketId)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's files.", err.Error(), "BUC0009")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's files.", err.Error(), "BUC0007")
 		return
 	}
+
 	json.NewEncoder(w).Encode(models.Bucket{
 		Id: bucketId,
 	})

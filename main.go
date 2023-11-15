@@ -50,16 +50,11 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 // @title BUILSPACE Core Platform Swagger API
 // @version 1.0
 // @description This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
-// @description **Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.
 // @termsOfService http://swagger.io/terms/
 
 // @SecurityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-
-// @SecurityDefinitions.apikey GroupId
-// @in header
-// @name X-Group-Id
 
 // @contact.name BUILDSPACE Core Platform Support
 // @contact.url http://www.swagger.io/support
@@ -89,13 +84,14 @@ func main() {
 	// File-wise
 	if deployment == "PROD" {
 		r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFile)).Methods("POST")
-		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.PostFile)).Queries("part", "{partNum}").Methods("POST")
+
+		r.HandleFunc("/file/copy", mid.AuthMiddleware(handle.CopyFile)).Methods("POST")
+		r.HandleFunc("/file/move", mid.AuthMiddleware(handle.MoveFile)).Methods("PUT")
 		r.HandleFunc("/file/info/{id}", mid.AuthMiddleware(handle.GetFileInfo)).Methods("GET")
+		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.PostFile)).Queries("part", "{partNum}").Methods("POST")
 		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFile)).Queries("part", "{partNum}").Methods("GET")
 		r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.DeleteFile)).Methods("DELETE")
 		r.HandleFunc("/file", mid.AuthMiddleware(handle.UpdateFile)).Methods("PUT")
-		r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFile)).Methods("POST")
-		r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFile)).Methods("PUT")
 	} else if deployment == "LOCAL" {
 		// r.HandleFunc("/file", mid.AuthMiddleware(handle.PostFileLocal)).Methods("POST")
 		// r.HandleFunc("/file/{id}", mid.AuthMiddleware(handle.GetFileLocal)).Methods("GET")

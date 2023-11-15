@@ -22,9 +22,8 @@ type IFileStorage interface {
 	// Open Multipart Upload
 	OpenMultipart(bucket string, fileID string) (string, error)
 
-	// Post Part of Multipart
-	PostPart(bucket string, fileID string, uploadID string, partID int,
-		data io.Reader, size int64, opts minio.PutObjectPartOptions) (minio.ObjectPart, error)
+	PostPart(bucket string, fileID string, data io.Reader,
+		size int64, opts minio.PutObjectOptions) (minio.UploadInfo, error)
 
 	// Close Multipart Upload
 	CloseMultipart(bucket string, fileID string, uploadID string, parts []minio.CompletePart) (minio.UploadInfo, error)
@@ -157,9 +156,9 @@ func (fileStorage *FileStorage) OpenMultipart(bucket string, fileID string) (str
 }
 
 // PostPart is a function to create a Multipart Upload Stream.
-func (fileStorage *FileStorage) PostPart(bucket string, fileID string, uploadID string, partID int,
-	data io.Reader, size int64, opts minio.PutObjectPartOptions) (minio.ObjectPart, error) {
-	return minioCore.PutObjectPart(context.Background(), bucket, fileID, uploadID, partID, data, size, opts)
+func (fileStorage *FileStorage) PostPart(bucket string, fileID string,
+	data io.Reader, size int64, opts minio.PutObjectOptions) (minio.UploadInfo, error) {
+	return minioCore.PutObject(context.Background(), bucket, fileID, data, size, "", "", opts)
 }
 
 // OpenMultipart is a function to create a Multipart Upload Stream.

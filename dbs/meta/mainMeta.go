@@ -4,11 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/isotiropoulos/storage-api/models"
-	"github.com/minio/minio-go/v7"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -35,6 +34,9 @@ type IFileStore interface {
 
 	// Delete many with common ancestore
 	DeleteManyWithAncestore(ancestore string) error
+
+	// Add to the file size the parts size
+	UpdateFileSize(fileID string, size int) (objUpdated models.File, err error)
 }
 
 // IFolderStore is a Database Interface for the Folders
@@ -61,34 +63,13 @@ type IFolderStore interface {
 	UpdateFiles(fileId string, folderID string) error
 
 	// UpdateAncestorSize is a function to update the size of the folder's ancestors
-	UpdateAncestorSize(ancestors []string, size int64) error
+	UpdateAncestorSize(ancestors []string, size int64, add bool) error
 
 	// UpdateMetaAncestors is a function to add to the []Updated when changes happen to all acestores
 	UpdateMetaAncestors(ancestors []string, userID string) error
 
 	// UpdateWithId is a function to update a Folder
 	UpdateWithId(folder models.Folder) (folderUpdated models.Folder, err error)
-}
-
-// IStreamStore is a Database Interface for the Sessions
-type IStreamStore interface {
-	// Insert a new stream
-	InsertOne(stream models.Stream) error
-
-	// Get a stream by ID
-	GetOneByID(streamID string) (models.Stream, error)
-
-	// Get a stream by the related file ID
-	GetOneByFileID(fileID string) (models.Stream, error)
-
-	// Update a stream by ID
-	UpdateWithId(stream models.Stream) (objectStream models.Stream, err error)
-
-	// Delete streams related to a file
-	DeleteManyWithFile(fileId string) error
-
-	// UpdateInArrayByIdAndIndex is to update a particular stream's part.
-	UpdateInArrayByIdAndIndex(streamId string, index string, part minio.CompletePart) (err error)
 }
 
 // IPartStore is a Database Interface for the Sessions
@@ -103,24 +84,30 @@ type IPartStore interface {
 	// Get a cusror of parts by file ID
 	GetCursorByFileID(fileID string) (*mongo.Cursor, error)
 
-	// Get a cusror of parts by stream ID
-	GetCursorByStreamID(streamID string) (*mongo.Cursor, error)
+	// Get part based on file ID and part number
+	GetOneByFileAndPart(fileID string, partNum int) (models.Part, error)
 
-	// Delete streams related to a stream
-	DeleteManyWithStream(streamId string) error
+	// Delete parts related to certain file
+	DeleteManyWithFile(fileId string) error
+
+	// Delete parts related to certain bucket
+	DeleteManyWithBucket(bucketId string) error
 }
 
 // FileStore ...
-type FileStore struct{}
+type FileStore struct {
+	mu sync.RWMutex
+}
 
 // FolderStore ...
-type FolderStore struct{}
-
-// StreamStore ...
-type StreamStore struct{}
+type FolderStore struct {
+	mu sync.RWMutex
+}
 
 // PartStore ...
-type PartStore struct{}
+type PartStore struct {
+	// mu sync.Mutex
+}
 
 // db is a Client of mongoDB
 var db *mongo.Database

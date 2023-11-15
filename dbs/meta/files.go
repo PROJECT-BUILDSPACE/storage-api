@@ -51,6 +51,9 @@ func (filestore *FileStore) GetCursorByAncestors(ancestors string) (*mongo.Curso
 
 // UpdateWithId is to update a file's fields.
 func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.File, err error) {
+	filestore.mu.Lock()
+	// defer filestore.mu.Unlock()
+
 	filter := bson.M{"_id": file.Id}
 	update := bson.M{
 		"$set": bson.M{
@@ -63,6 +66,28 @@ func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.Fi
 		},
 	}
 	_, erro := db.Collection(FILESCOLLECTION).UpdateOne(context.TODO(), filter, update)
+	filestore.mu.Unlock()
+	return file, erro
+}
+
+func (filestore *FileStore) UpdateFileSize(fileID string, size int) (objUpdated models.File, err error) {
+	filestore.mu.Lock()
+
+	var file models.File
+	err = db.Collection(FILESCOLLECTION).FindOne(context.Background(), bson.M{"_id": fileID}).Decode(&file)
+	if err != nil {
+		return file, err
+	}
+
+	file.Size = file.Size + int64(size)
+	filter := bson.M{"_id": fileID}
+	update := bson.M{
+		"$set": bson.M{
+			"size": file.Size,
+		},
+	}
+	_, erro := db.Collection(FILESCOLLECTION).UpdateOne(context.TODO(), filter, update)
+	filestore.mu.Unlock()
 	return file, erro
 }
 

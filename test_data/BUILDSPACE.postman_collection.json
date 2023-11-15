@@ -3,7 +3,8 @@
 		"_postman_id": "20ab87a2-ee0a-41ba-8294-90d887a8c176",
 		"name": "BUILDSPACE",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26263170"
+		"_exporter_id": "26263170",
+		"_collection_link": "https://cloudy-flare-967310.postman.co/workspace/SLG-General~e0b652ec-19d0-493e-acc8-999ea941258f/collection/26263170-20ab87a2-ee0a-41ba-8294-90d887a8c176?action=share&source=collection_link&creator=26263170"
 	},
 	"item": [
 		{
@@ -74,6 +75,68 @@
 					"response": []
 				},
 				{
+					"name": "User Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "password",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{CLIENT_ID}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{CLIENT_SECRET}}",
+									"type": "text"
+								},
+								{
+									"key": "username",
+									"value": "{{UNAME}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{PWD}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/realms/buildspace/protocol/openid-connect/token",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"realms",
+								"buildspace",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Group",
 					"event": [
 						{
@@ -106,6 +169,15 @@
 									"\r",
 									"\r",
 									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
 									""
 								],
 								"type": "text/javascript"
@@ -150,7 +222,7 @@
 					"response": []
 				},
 				{
-					"name": "Get Group",
+					"name": "Get Users",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -202,6 +274,84 @@
 						"method": "GET",
 						"header": [],
 						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"responseBody = pm.response.json();\r",
+									"pm.collectionVariables.set(\"DELETE_GROUP_ID\", responseBody[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
 							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/?search=delete-group",
 							"host": [
 								"{{OIDC_URL}}"
@@ -224,7 +374,7 @@
 					"response": []
 				},
 				{
-					"name": "Delete Group",
+					"name": "User Join Group",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -235,7 +385,6 @@
 									"var cpword = \"4@8<lk4<iAhp&of\";\r",
 									"var cID = \"admin-cli\";\r",
 									"var cSECR = \"\";\r",
-									"var masterToken = \"\";\r",
 									"\r",
 									"pm.sendRequest({\r",
 									"    url: authServiceUrl+'/token',\r",
@@ -252,26 +401,621 @@
 									"            ]\r",
 									"    }\r",
 									"    }, (err, res) => {\r",
-									"        masterToken = res.json().access_token\r",
-									"    pm.variables.set(\"masterToken\", masterToken)\r",
-									"    // Define the request options\r",
-									"   \r",
-									"    // Send the request and extract the group ID from the response\r",
-									"    pm.sendRequest({\r",
-									"        url: pm.collectionVariables.get('OIDC_URL') + '/admin/realms/buildspace/groups/?search=delete-group',\r",
-									"        method: \"GET\",  \r",
-									"        header: {\r",
-									"            'Content-Type': 'application/json',\r",
-									"            'Authorization': 'Bearer ' + masterToken\r",
-									"        }}, (err, res) => {\r",
-									"    if (err) {\r",
-									"        console.log(err);\r",
-									"    } else {\r",
-									"        const group = res.json()[0]; // Assume the first group in the list is the one we want\r",
-									"        pm.collectionVariables.set('DELETE_GROUP_ID', group.id);\r",
-									"    }\r",
-									"    });\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
 									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/{{KC_UID}}/groups/{{DELETE_GROUP_ID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								"{{KC_UID}}",
+								"groups",
+								"{{DELETE_GROUP_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Groups",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/{{KC_UID}}/groups/",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								"{{KC_UID}}",
+								"groups",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Passworc",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"PWD\", \"1234\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"credentials\": [\r\n    {\r\n      \"type\": \"password\",\r\n      \"value\": \"1234\"\r\n    }\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/{{KC_UID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								"{{KC_UID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Rollback User Password",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"PWD\", \"lala\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"credentials\": [\r\n    {\r\n      \"type\": \"password\",\r\n      \"value\": \"lala\"\r\n    }\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/{{KC_UID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								"{{KC_UID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roles",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/roles/?search=group-member",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"roles",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "group-member"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role Attributes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"responseBody = pm.response.json();\r",
+									"pm.collectionVariables.set(\"GROUP_ADMIN_ROLE_ID\", responseBody.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/roles/group-admin",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"roles",
+								"group-admin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role Attributes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"{{GROUP_ADMIN_ROLE_ID}}\",\r\n    \"name\": \"group-admin\",\r\n    \"composite\": false,\r\n    \"clientRole\": false,\r\n    \"containerId\": \"buildspace\",\r\n    \"attributes\": {\r\n        \"\\\"{{DELETE_GROUP_ID}}\\\"\": [\r\n            \"[\\\"{{KC_UID}},NEW_DUMMY_ID\\\"]\"\r\n        ]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/roles-by-id/{{GROUP_ADMIN_ROLE_ID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"roles-by-id",
+								"{{GROUP_ADMIN_ROLE_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Leave group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/users/{{KC_UID}}/groups/{{DELETE_GROUP_ID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"users",
+								"{{KC_UID}}",
+								"groups",
+								"{{DELETE_GROUP_ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Group",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
 									"\r",
 									""
 								],
@@ -636,6 +1380,284 @@
 								"buildspace",
 								"groups",
 								"{{tmpID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete TMPs",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var authServiceUrl = pm.collectionVariables.get('OIDC_URL') + '/realms/master/protocol/openid-connect';\r",
+									"var cname = 'buildspace';\r",
+									"var cpword = \"4@8<lk4<iAhp&of\";\r",
+									"var cID = \"admin-cli\";\r",
+									"var cSECR = \"\";\r",
+									"\r",
+									"pm.sendRequest({\r",
+									"    url: authServiceUrl+'/token',\r",
+									"    method: 'POST',\r",
+									"header: 'Content-Type:application/x-www-form-urlencoded',\r",
+									"  body: {\r",
+									"            mode: 'urlencoded',\r",
+									"            urlencoded: [\r",
+									"                    { key: \"grant_type\", value: \"password\"},\r",
+									"                    { key: \"client_id\", value: cID },\r",
+									"                    { key: \"client_secret\", value: cSECR },\r",
+									"                    { key: \"username\", value: cname },\r",
+									"                    { key: \"password\", value: cpword },\r",
+									"            ]\r",
+									"    }\r",
+									"    }, (err, res) => {\r",
+									"    pm.variables.set(\"masterToken\", res.json().access_token)\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{masterToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{OIDC_URL}}/admin/realms/buildspace/groups/{{tmpID}}",
+							"host": [
+								"{{OIDC_URL}}"
+							],
+							"path": [
+								"admin",
+								"realms",
+								"buildspace",
+								"groups",
+								"{{tmpID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account Manager",
+			"item": [
+				{
+					"name": "Create Organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"responseBody = pm.response.json();\r",
+									"pm.collectionVariables.set(\"KC_UGID_1\", responseBody.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"TEST\",\r\n    \"path\": \"/\",\r\n    \"attributes\": {\r\n        \"expiration\": [\"2\"]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/group/",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"group",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change User Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set(\"PWD\", \"1234\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": \"1234\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/user/{{KC_UID}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"user",
+								"{{KC_UID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Admins of Group",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/role/group-admin/{{KC_UGID_1}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"role",
+								"group-admin",
+								"{{KC_UGID_1}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Data",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/user/{{KC_UID}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"user",
+								"{{KC_UID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User's ORganizations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/group/",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"group",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Admins (add admin)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"attributes\": {\r\n        \"{{KC_UGID_1}}\": [\"{{KC_UID}},NEW_DUMMY_ID\"]\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/role/group-admin/{{KC_UGID_1}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"role",
+								"group-admin",
+								"{{KC_UGID_1}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Join Users in Groups (as admins or not)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"users\": [\r\n        {\"ID_OF_SIMPLE_MEMBER\":{\"admin\": false}},\r\n        {\"ID_OF_NEW_ADMIN\":{\"admin\": true}}\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/group/{{KC_UGID_1}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"group",
+								"{{KC_UGID_1}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Organization",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{ACCOUNT_URL}}/group/{{KC_UGID_1}}",
+							"host": [
+								"{{ACCOUNT_URL}}"
+							],
+							"path": [
+								"group",
+								"{{KC_UGID_1}}"
 							]
 						}
 					},
@@ -1722,16 +2744,10 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"name\": \"{{KC_UGID_1}}\"\r\n}",
+									"raw": "{\r\n    \"_id\": \"{{KC_UGID_1}}\" ,\r\n    \"name\": \"TEST\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1766,13 +2782,7 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
 									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{KC_UGID_1}}\"\r\n}",
@@ -1810,16 +2820,10 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-1\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-2\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1854,13 +2858,7 @@
 							],
 							"request": {
 								"method": "DELETE",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
 									"host": [
@@ -1890,13 +2888,7 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
 									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-2\"\r\n    },\r\n    \"parent\": \"{{FL1-ID}}\"\r\n}",
@@ -1934,13 +2926,7 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
 									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"Folder-level-3\"\r\n    },\r\n    \"parent\": \"{{FL2-ID}}\"\r\n}",
@@ -1977,13 +2963,7 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/folder?id={{FL1-ID}}",
 									"host": [
@@ -2017,13 +2997,7 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/folder/list?id={{FL1-ID}}",
 									"host": [
@@ -2058,15 +3032,9 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
-									"raw": "{{API_URL}}/folder?id=",
+									"raw": "{{API_URL}}/folder?id={{KC_UGID_1}}",
 									"host": [
 										"{{API_URL}}"
 									],
@@ -2076,7 +3044,7 @@
 									"query": [
 										{
 											"key": "id",
-											"value": ""
+											"value": "{{KC_UGID_1}}"
 										}
 									]
 								}
@@ -2110,11 +3078,6 @@
 								"method": "POST",
 								"header": [
 									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
-									{
 										"key": "total",
 										"value": "2",
 										"type": "text"
@@ -2122,7 +3085,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"folder\": \"{{FL2-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
+									"raw": "{\r\n    \"meta\": {\r\n        \"title\": \"newTLT\",\r\n        \"tags\": [\"t1\", \"t2\", \"t3\"]\r\n    },\r\n    \"folder\": \"{{FL2-ID}}\",\r\n    \"original_title\": \"{{FILE7.0-LOCAL_PATH}}\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2166,11 +3129,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
@@ -2227,11 +3185,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
@@ -2290,11 +3243,6 @@
 								"method": "POST",
 								"header": [
 									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
-									{
 										"key": "total",
 										"value": "1",
 										"type": "text"
@@ -2347,11 +3295,6 @@
 								"method": "POST",
 								"header": [
 									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
-									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
 										"type": "text"
@@ -2386,27 +3329,16 @@
 							"name": "Get File Info (2.9MB) Copy",
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
-									"raw": "{{API_URL}}/info/file?id={{FILE2.9}}",
+									"raw": "{{API_URL}}/file/info/{{FILE2.9}}",
 									"host": [
 										"{{API_URL}}"
 									],
 									"path": [
+										"file",
 										"info",
-										"file"
-									],
-									"query": [
-										{
-											"key": "id",
-											"value": "{{FILE2.9}}"
-										}
+										"{{FILE2.9}}"
 									]
 								}
 							},
@@ -2416,13 +3348,7 @@
 							"name": "Get File (2.9MB)",
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/file/{{FILE2.9}}?part=1",
 									"host": [
@@ -2446,27 +3372,16 @@
 							"name": "Get File Info (7.0MB)",
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
-									"raw": "{{API_URL}}/info/file?id={{FILE7.0}}",
+									"raw": "{{API_URL}}/file/info/{{FILE7.0}}",
 									"host": [
 										"{{API_URL}}"
 									],
 									"path": [
+										"file",
 										"info",
-										"file"
-									],
-									"query": [
-										{
-											"key": "id",
-											"value": "{{FILE7.0}}"
-										}
+										"{{FILE7.0}}"
 									]
 								}
 							},
@@ -2476,13 +3391,7 @@
 							"name": "Get File (7MB) Part 1/2",
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=1",
 									"host": [
@@ -2506,13 +3415,7 @@
 							"name": "Get File (7MB) Part 2/2",
 							"request": {
 								"method": "GET",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/file/{{FILE7.0}}?part=2",
 									"host": [
@@ -2536,13 +3439,7 @@
 							"name": "Delete File (2.9MB)",
 							"request": {
 								"method": "DELETE",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/file/{{FILE2.9}}",
 									"host": [
@@ -2582,11 +3479,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "total",
 										"value": "1",
@@ -2640,11 +3532,6 @@
 								"method": "POST",
 								"header": [
 									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
-									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
 										"type": "text"
@@ -2691,13 +3578,7 @@
 							],
 							"request": {
 								"method": "DELETE",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/folder/{{FL2-ID}}",
 									"host": [
@@ -2737,11 +3618,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "total",
 										"value": "2",
@@ -2794,11 +3670,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
@@ -2855,11 +3726,6 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									},
 									{
 										"key": "Content-Type",
 										"value": "application/octet-stream",
@@ -2920,13 +3786,7 @@
 							],
 							"request": {
 								"method": "PUT",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
 									"raw": "{{UPDATE_BODY}}",
@@ -2965,7 +3825,7 @@
 									"script": {
 										"exec": [
 											"pm.sendRequest({\r",
-											"    url: pm.collectionVariables.get(\"API_URL\") + \"/info/file?id=\" + pm.collectionVariables.get(\"FILE7.0\"),\r",
+											"    url: pm.collectionVariables.get(\"API_URL\") + \"/file/info/\" + pm.collectionVariables.get(\"FILE7.0\"),\r",
 											"    method: 'GET',\r",
 											"    header: {\r",
 											"        'Content-Type': 'application/json',\r",
@@ -2986,13 +3846,7 @@
 							],
 							"request": {
 								"method": "PUT",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
 									"raw": "{{UPDATE_BODY}}",
@@ -3039,16 +3893,10 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"id\": \"{{FILE7.0}}\",\r\n    \"destination\": \"{{KC_UGID_1}}\",\r\n    \"new_name\": \"copied {{FL1-ID}}\"\r\n}",
+									"raw": "{\r\n    \"_id\": \"{{FILE7.0}}\",\r\n    \"destination\": \"{{KC_UGID_1}}\",\r\n    \"new_name\": \"copied {{FILE7.0}}\"\r\n}\r\n",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -3056,13 +3904,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{API_URL}}/copy/file",
+									"raw": "{{API_URL}}/file/copy",
 									"host": [
 										"{{API_URL}}"
 									],
 									"path": [
-										"copy",
-										"file"
+										"file",
+										"copy"
 									]
 								}
 							},
@@ -3083,16 +3931,10 @@
 							],
 							"request": {
 								"method": "PUT",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"id\": \"{{FILE7.0-NEW}}\",\r\n    \"destination\": \"{{FL1-ID}}\",\r\n    \"new_name\": \"moved {{FILE7.0-NEW}}\"\r\n}",
+									"raw": "{\r\n    \"_id\": \"{{FILE7.0-NEW}}\",\r\n    \"destination\": \"{{KC_UGID_1}}\",\r\n    \"new_name\": \"NEW moved {{FILE7.0-NEW}}\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -3100,13 +3942,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{API_URL}}/move/file",
+									"raw": "{{API_URL}}/file/move",
 									"host": [
 										"{{API_URL}}"
 									],
 									"path": [
-										"move",
-										"file"
+										"file",
+										"move"
 									]
 								}
 							},
@@ -3127,13 +3969,7 @@
 							],
 							"request": {
 								"method": "DELETE",
-								"header": [
-									{
-										"key": "X-Group-Id",
-										"value": "{{KC_UGID_1}}",
-										"type": "text"
-									}
-								],
+								"header": [],
 								"url": {
 									"raw": "{{API_URL}}/bucket/{{KC_UGID_1}}",
 									"host": [
@@ -3196,61 +4032,11 @@
 					"            ]",
 					"    }",
 					"    }, (err, res) => {",
+					"        console.log(err)",
 					"    payload = parseJwt(res.json().access_token,1);",
 					"    pm.collectionVariables.set(\"KC_UID\", payload.sub)",
-					"    pm.collectionVariables.set(\"KC_UGID_1\", payload.groupIDs[0])",
 					"    pm.collectionVariables.set(\"TOKEN\", res.json().access_token)",
 					"});",
-					"",
-					"// cname = 'buildspace';",
-					"// cpword = \"4@8<lk4<iAhp&of\";",
-					"// cID = \"admin-cli\";",
-					"// cSECR = \"\";",
-					"",
-					"// pm.sendRequest({",
-					"//     url: authServiceUrl+'/token',",
-					"//     method: 'POST',",
-					"// header: 'Content-Type:application/x-www-form-urlencoded',",
-					"//   body: {",
-					"//             mode: 'urlencoded',",
-					"//             urlencoded: [",
-					"//                     { key: \"grant_type\", value: \"password\"},",
-					"//                     { key: \"client_id\", value: cID },",
-					"//                     { key: \"client_secret\", value: cSECR },",
-					"//                     { key: \"username\", value: cname },",
-					"//                     { key: \"password\", value: cpword },",
-					"//             ]",
-					"//     }",
-					"//     }, (err, res) => {",
-					"//     pm.collectionVariables.set(\"masterToken\", res.json().access_token)",
-					"// });",
-					"",
-					"",
-					"",
-					"",
-					"// pm.sendRequest({",
-					"//     url: \"http://localhost:30105/realms/master/protocol/openid-connect/token\",",
-					"//     method: 'POST',",
-					"//     header: {",
-					"//         'Content-Type': 'application/x-www-form-urlencoded'",
-					"//     },",
-					"//     body: {",
-					"//         mode: 'urlencoded',",
-					"//         urlencoded: [",
-					"//             {key: 'client_id', value: 'admin-cli'},",
-					"//             {key: 'username', value: 'buildspace'},",
-					"//             {key: 'password', value: '4@8<lk4<iAhp&of'},",
-					"//             {key: 'grant_type', value: 'password'},",
-					"//             {key: 'client_secret', value: ''}",
-					"//         ]",
-					"//     }",
-					"// }, function (err, res) {",
-					"//     if (err) {",
-					"//         console.log(err);",
-					"//     } else {",
-					"//         pm.collectionVariables.set(\"master_token\", res.json().access_token);",
-					"//     }",
-					"// });",
 					""
 				]
 			}
@@ -3267,18 +4053,28 @@
 	],
 	"variable": [
 		{
+			"key": "API_URL",
+			"value": "https://api-core-dataspaces.euinno.eu",
+			"type": "string"
+		},
+		{
+			"key": "ACCOUNT_URL",
+			"value": "https://account-dataspaces.euinno.eu/",
+			"type": "string"
+		},
+		{
 			"key": "OIDC_URL",
-			"value": "http://localhost:30105/auth/realms/buildspace",
+			"value": "https://keycloak-dataspaces.euinno.eu/auth",
 			"type": "string"
 		},
 		{
 			"key": "UNAME",
-			"value": "isotiropoulos@singularlogic.eu",
+			"value": "apapanikolaou@singularlogic.eu",
 			"type": "string"
 		},
 		{
 			"key": "PWD",
-			"value": "isotiropoulos",
+			"value": "1234",
 			"type": "string"
 		},
 		{
@@ -3288,21 +4084,16 @@
 		},
 		{
 			"key": "CLIENT_SECRET",
-			"value": "d4AvWhUKAZqdMnBVPR0dD5w5RrZfk9RC",
+			"value": "3dbsmzNlcamV2yJetI1uXrucQTT3UkqW",
 			"type": "string"
 		},
 		{
 			"key": "MINIO_URL",
-			"value": "http://localhost:9000"
+			"value": "https://minio-s3-dataspaces.euinno.eu"
 		},
 		{
 			"key": "TOKEN",
 			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "API_URL",
-			"value": "http://localhost:30000",
 			"type": "string"
 		},
 		{
@@ -3366,16 +4157,20 @@
 		},
 		{
 			"key": "FILE2.9-LOCAL_PATH",
-			"value": "C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/2.9MB_TIFF.tif",
+			"value": "C:/Users/apapanikolaou/Desktop/BUILDSPACE/storage-api/test_data/2.9MB_TIFF.tif",
 			"type": "string"
 		},
 		{
 			"key": "FILE7.0-LOCAL_PATH",
-			"value": "C:/Users/isotiropoulos/Documents/GitHub/storage-api/test_data/7MB_TIFF.tif",
+			"value": "C:/Users/apapanikolaou/Desktop/BUILDSPACE/storage-api/test_data/7MB_TIFF.tif",
 			"type": "string"
 		},
 		{
 			"key": "FILE7.0-NEW",
+			"value": ""
+		},
+		{
+			"key": "GROUP_ADMIN_ROLE_ID",
 			"value": ""
 		}
 	]

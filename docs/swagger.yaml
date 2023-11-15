@@ -1,6 +1,10 @@
 definitions:
   models.Bucket:
     properties:
+      _id:
+        type: string
+      creation_date:
+        type: string
       name:
         type: string
     type: object
@@ -44,6 +48,8 @@ definitions:
         type: string
       size:
         type: integer
+      total:
+        type: integer
     type: object
   models.Folder:
     properties:
@@ -65,6 +71,9 @@ definitions:
         items:
           type: string
         type: array
+      level:
+        description: Level of the folder (root is level 0 etc..)
+        type: integer
       meta:
         allOf:
         - $ref: '#/definitions/models.Meta'
@@ -72,19 +81,22 @@ definitions:
       parent:
         description: Parent's folder id
         type: string
+      size:
+        description: Size of a folder (cumulative size of folder's items)
+        type: integer
     type: object
   models.FolderList:
     properties:
       files:
-        additionalProperties:
-          $ref: '#/definitions/models.Meta'
         description: Keys are file ids and values are the files' metadata
-        type: object
+        items:
+          $ref: '#/definitions/models.File'
+        type: array
       folders:
-        additionalProperties:
-          $ref: '#/definitions/models.Meta'
         description: Keys are folder ids and values are the folders' metadata
-        type: object
+        items:
+          $ref: '#/definitions/models.Folder'
+        type: array
     type: object
   models.Meta:
     properties:
@@ -93,12 +105,10 @@ definitions:
         type: string
       date_creation:
         description: Date and time of creation
-        type: integer
-      descriptions:
+        type: string
+      description:
         description: Array of descriptions for the file
-        items:
-          type: string
-        type: array
+        type: string
       read:
         description: Array of user ids with reading rights
         items:
@@ -113,10 +123,9 @@ definitions:
         description: Title of the file
         type: string
       update:
+        allOf:
+        - $ref: '#/definitions/models.Updated'
         description: Array with data that store the updates
-        items:
-          $ref: '#/definitions/models.Updated'
-        type: array
       write:
         description: Array of user ids with writing rights
         items:
@@ -137,9 +146,8 @@ info:
     email: isotiropoulos@singularlogic.eu
     name: BUILDSPACE Core Platform Support
     url: http://www.swagger.io/support
-  description: |-
-    This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
-    **Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.
+  description: This is a swagger for the API that was developed as a core platform
+    of the BUILDSPACE project.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -176,7 +184,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Create bucket.
       tags:
       - Buckets
@@ -208,7 +215,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Delete bucket with all contents.
       tags:
       - Buckets
@@ -266,7 +272,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Upload a file.
       tags:
       - Files
@@ -308,7 +313,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Update a file.
       tags:
       - Files
@@ -335,7 +339,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Delete file by ID.
       tags:
       - Files
@@ -367,7 +370,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Download a file.
       tags:
       - Files
@@ -407,7 +409,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Get folder by id.
       tags:
       - Folders
@@ -444,7 +445,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Create a new folder.
       tags:
       - Folders
@@ -485,7 +485,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Update folder by ID.
       tags:
       - Folders
@@ -526,7 +525,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Delete folder by id.
       tags:
       - Folders
@@ -559,7 +557,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: List folder's items.
       tags:
       - Folders
@@ -587,7 +584,6 @@ paths:
             $ref: '#/definitions/models.ErrorReport'
       security:
       - BearerAuth: []
-      - GroupId: []
       summary: Get metadata of file.
       tags:
       - Files
@@ -595,9 +591,5 @@ securityDefinitions:
   BearerAuth:
     in: header
     name: Authorization
-    type: apiKey
-  GroupId:
-    in: header
-    name: X-Group-Id
     type: apiKey
 swagger: "2.0"

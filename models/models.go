@@ -1,8 +1,6 @@
 package models
 
 import (
-	"bytes"
-	"sync"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -24,12 +22,6 @@ type OidcClaims struct {
 type Bucket struct {
 	Id           string    `json:"_id"`
 	Name         string    `json:"name"`
-	CreationDate time.Time `json:"creation_date"`
-}
-
-// ObjectPartInfo bucket metadata.
-type ObjectPartInfo struct {
-	PartNumber   int       `json:"name"`
 	CreationDate time.Time `json:"creation_date"`
 }
 
@@ -60,46 +52,16 @@ type File struct {
 	OriginalTitle string   `json:"original_title" bson:"original_title"` // The file's title before uploading
 	FileType      string   `json:"file_type" bson:"file_type"`           // The file's extention
 	Size          int64    `json:"size" bson:"size"`
-	// Encrypted     bool     `json:"encrypted" bson:"encrypted"`
-}
-
-// Stream contains information about a file's stream.
-type Stream struct {
-	Id     string `json:"_id" bson:"_id"`         // Stream's id
-	FileID string `json:"file_id" bson:"file_id"` // Corresponding File ID
-	Total  int    `json:"total" bson:"total"`
-	Status string `json:"status" bson:"status"` // Status of the stream
+	Total         int      `json:"total" bson:"total"`
 }
 
 // Part contains information about a file's stream.
 type Part struct {
-	Id         string             `json:"_id" bson:"_id"`                 // Part's id
-	PartNumber int                `json:"part_number" bson:"part_number"` // Parts's Number
-	StreamID   string             `json:"stream_id" bson:"stream_id"`     // Corresponding Stream ID
-	FileID     string             `json:"file_id" bson:"file_id"`         // Corresponding File ID
-	Size       int64              `json:"size" bson:"size"`               // Corresponding Part's size
-	Part       minio.CompletePart `json:"actual_part" bson:"actual_part"` // Actual Complete part
-}
-
-type FilePart struct {
-	PartNumber int          `json:"partNumber" bson:"partNumber"`
-	FileID     string       `json:"fileId" bson:"fileId"`
-	Part       bytes.Buffer `json:"down_stream" bson:"down_stream"`
-}
-
-type MinioPart struct {
-	PartNumber int    `json:"part_number" bson:"part_number"`
-	ETag       string `json:"etag" bson:"etag"`
-}
-
-type Session struct {
-	Id         string         `json:"_id" bson:"_id"`
-	UploadId   string         `json:"upload_id" bson:"upload_id"`
-	TotalParts int            `json:"total_parts" bson:"total_parts"`
-	Parts      []MinioPart    `json:"parts" bson:"parts"`
-	WGroup     sync.WaitGroup `json:"wait_group" bson:"wait_group"`
-	Error      string         `json:"error" bson:"error"`
-	Completed  bool           `json:"completed" bson:"completed"`
+	Id         string           `json:"_id" bson:"_id"`                 // Part's id
+	PartNumber int              `json:"part_number" bson:"part_number"` // Parts's Number
+	FileID     string           `json:"file_id" bson:"file_id"`         // Corresponding File ID
+	Size       int64            `json:"size" bson:"size"`               // Corresponding Part's size
+	UploadInfo minio.UploadInfo `json:"upload_info" bson:"upload_info"` // Corresponding Part's upload info
 }
 
 // UpdateFileBody is the body of a postFile request.
@@ -127,11 +89,6 @@ type PostFolderBody struct {
 	Description string `json:"description"` // Description for the folder
 }
 
-// UpdateFolderBody is the body of a updateFolder request.
-// type UpdateFolderBody struct {
-// 	Data map[string]interface{} `json:"data" bson:"data"` // Hashmap with updates (key representes a key of a document and value represents the desirable value)
-// }
-
 // FolderList is a list of items in folder.
 type FolderList struct {
 	Files   []File   `json:"files"`   // Keys are file ids and values are the files' metadata
@@ -140,7 +97,7 @@ type FolderList struct {
 
 // CopyMoveBody is the body of an copy or move request
 type CopyMoveBody struct {
-	Id          string `json:"id"`          // ID of object (file or folder)
+	Id          string `json:"_id"`         // ID of object (file or folder)
 	Destination string `json:"destination"` // ID of destination
 	NewName     string `json:"new_name"`    // ID of destination
 }

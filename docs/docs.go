@@ -30,9 +30,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Use a Bucket model to create a new bucket.",
@@ -84,9 +81,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Delete a bucket based on it's ID.",
@@ -136,9 +130,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to update file meta data. Pass a models.File of the file that will be updated with the updates included.\n**Note** that this endpoint updates the meta data and not the file contents. To update file contents user must delete int and re-upload it.",
@@ -200,9 +191,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to upload files. The files are uploaded using a multipart streaming upload.\nStep 1 is to select the content-type.\n- If **application/json** then the request will be sent to initialize the multipart upload. In this case user must pass a **File model as a payload** containing the **folder** and the **original_title** fields. User must also pass the **total** header to specify the number of parts that will be uploaded.\n- If **application/octet-stream** user must pass the **binary data** (decoded) in the body and also provide the **file ID** and part number parameters.",
@@ -285,9 +273,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to get files. The files are downloaded using a **multipart streaming download**.\nUser provies the file id as well as the part number and receives the decoded and decrypted bytes/",
@@ -333,9 +318,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "This is the endopoint to delete files. The files are deleted based on ther id.",
@@ -376,9 +358,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Get a folders meta data by the ID. Pass the ID in a query parameter.",
@@ -438,9 +417,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Update a folders meta data by the ID. Pass the Folder model with the updates that are needed.",
@@ -502,9 +478,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Use a Folder model as a payload to create a new folder. Essential fields are meta.title (folder's name) and parent (location).",
@@ -562,9 +535,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Get lists of files and folders in a specific folder, by id. Result is a FolderList model",
@@ -614,9 +584,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Pass folder's id to delete it. Nested items (either files or folders) will be deleted as well.",
@@ -678,9 +645,6 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "GroupId": []
                     }
                 ],
                 "description": "Returns the metadata of a file by it's ID.",
@@ -724,6 +688,12 @@ const docTemplate = `{
         "models.Bucket": {
             "type": "object",
             "properties": {
+                "_id": {
+                    "type": "string"
+                },
+                "creation_date": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -786,6 +756,9 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -817,6 +790,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "level": {
+                    "description": "Level of the folder (root is level 0 etc..)",
+                    "type": "integer"
+                },
                 "meta": {
                     "description": "Folder's Metadata",
                     "allOf": [
@@ -828,6 +805,10 @@ const docTemplate = `{
                 "parent": {
                     "description": "Parent's folder id",
                     "type": "string"
+                },
+                "size": {
+                    "description": "Size of a folder (cumulative size of folder's items)",
+                    "type": "integer"
                 }
             }
         },
@@ -836,16 +817,16 @@ const docTemplate = `{
             "properties": {
                 "files": {
                     "description": "Keys are file ids and values are the files' metadata",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/models.Meta"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.File"
                     }
                 },
                 "folders": {
                     "description": "Keys are folder ids and values are the folders' metadata",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/models.Meta"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Folder"
                     }
                 }
             }
@@ -859,14 +840,11 @@ const docTemplate = `{
                 },
                 "date_creation": {
                     "description": "Date and time of creation",
-                    "type": "integer"
+                    "type": "string"
                 },
-                "descriptions": {
+                "description": {
                     "description": "Array of descriptions for the file",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "read": {
                     "description": "Array of user ids with reading rights",
@@ -888,10 +866,11 @@ const docTemplate = `{
                 },
                 "update": {
                     "description": "Array with data that store the updates",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Updated"
-                    }
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Updated"
+                        }
+                    ]
                 },
                 "write": {
                     "description": "Array of user ids with writing rights",
@@ -921,11 +900,6 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
-        },
-        "GroupId": {
-            "type": "apiKey",
-            "name": "X-Group-Id",
-            "in": "header"
         }
     }
 }`
@@ -937,7 +911,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "BUILSPACE Core Platform Swagger API",
-	Description:      "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.\n**Note** that the **GroupId** apikey is not realy an api key, but a header. Specifically, pass the Group ID in that field in order to get authorized.",
+	Description:      "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

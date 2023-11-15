@@ -26,10 +26,7 @@ import (
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [post]
 // @Security BearerAuth
-// @Security GroupId
 func PostFolder(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Println("in")
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -66,7 +63,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &inFolder)
 		if inFolder.Meta.Title == folder.Meta.Title {
-			utils.RespondWithError(w, http.StatusConflict, "Folder Exists.", err.Error(), "FOL0005")
+			utils.RespondWithError(w, http.StatusConflict, "Folder Exists.", "Folders in the same path must have different names.", "FOL0005")
 			return
 		}
 	}
@@ -165,7 +162,6 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder/{id} [delete]
 // @Security BearerAuth
-// @Security GroupId
 func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -227,6 +223,12 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = folderDB.UpdateAncestorSize(folder.Ancestors, folder.Size, false)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusNotFound, "Could not update parent folder.", err.Error(), "FIL0037")
+		return
+	}
+
 	// Delete Nested Items
 	// Delete Folders
 	err = folderDB.DeleteManyWithAncestore(params["id"])
@@ -236,23 +238,21 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete Files
-	cursor, err := fileDB.GetCursorByAncestors(params["id"])
+	fileCursor, err := fileDB.GetCursorByAncestors(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error when deleting nested files.", err.Error(), "FOL0018")
 		return
 	}
-
-	defer cursor.Close(context.Background())
-
-	for cursor.Next(context.Background()) {
-
+	defer fileCursor.Close(context.Background())
+	for fileCursor.Next(context.Background()) {
 		var result bson.M
 		var file models.File
-		if err = cursor.Decode(&result); err != nil {
+		if err = fileCursor.Decode(&result); err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not resolve cursor.", err.Error(), "FOL0019")
 			return
 		}
 
+		// Delete File Document
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &file)
 		if err = fileDB.DeleteOneByID(file.Id); err != nil {
@@ -260,19 +260,41 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = streamDB.DeleteManyWithFile(file.Id)
+		// Delete Part Documents
+		partCursor, err := partsDB.GetCursorByFileID(file.Id)
 		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete stream.", err.Error(), "FOL0036")
+			utils.RespondWithError(w, http.StatusInternalServerError, "Error when deleting nested files.", err.Error(), "FOL0036")
 			return
 		}
 
-		// Remove Object from MINIO
-		groupId := r.Header.Get("X-Group-Id")
-		if err = storage.DeleteFile(file.Id, groupId); err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FOL0021")
+		defer partCursor.Close(context.Background())
+		for partCursor.Next(context.Background()) {
+			groupId := r.Header.Get("X-Group-Id")
+
+			var result2 bson.M
+			var part models.Part
+			if err = partCursor.Decode(&result2); err != nil {
+				utils.RespondWithError(w, http.StatusInternalServerError, "Could not resolve cursor.", err.Error(), "FOL0021")
+				return
+			}
+
+			// Delete Parts from storage
+			bsonBytes2, _ := bson.Marshal(result2)
+			bson.Unmarshal(bsonBytes2, &part)
+			if err = storage.DeleteFile(part.Id, groupId); err != nil {
+				utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FOL0022")
+				return
+			}
+		}
+
+		// Delete parts from collection
+		err = partsDB.DeleteManyWithFile(file.Id)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete file parts.", err.Error(), "BUC0009")
 			return
 		}
 	}
+
 	json.NewEncoder(w).Encode(folder)
 }
 
@@ -290,7 +312,6 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [get]
 // @Security BearerAuth
-// @Security GroupId
 func GetFolder(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")
@@ -298,21 +319,11 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 	var folder models.Folder
 	var err error
 
-	if folderID == "" {
-		// Get root
-		groupId := r.Header.Get("X-Group-Id")
-		folder, err = folderDB.GetOneByID(groupId)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0022")
-			return
-		}
-	} else {
-		// Get folder by folder ID
-		folder, err = folderDB.GetOneByID(folderID)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
-			return
-		}
+	// Get folder by folder ID
+	folder, err = folderDB.GetOneByID(folderID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -334,7 +345,6 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder [put]
 // @Security BearerAuth
-// @Security GroupId
 func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -431,7 +441,6 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Router /folder/list [get]
 // @Security BearerAuth
-// @Security GroupId
 func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 
 	folderID := r.FormValue("id")

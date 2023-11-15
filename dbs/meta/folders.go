@@ -55,11 +55,14 @@ func (folderstore *FolderStore) GetCursorByParent(parentID string) (*mongo.Curso
 }
 
 func (folderstore *FolderStore) UpdateFiles(fileId string, folderID string) error {
+	folderstore.mu.Lock()
 	_, err := db.Collection(FOLDERSSCOLLECTION).UpdateOne(context.Background(), bson.M{"_id": folderID}, bson.D{{"$push", bson.M{"files": fileId}}})
+	folderstore.mu.Unlock()
 	return err
 }
 
 func (folderstore *FolderStore) UpdateWithId(folder models.Folder) (folderUpdated models.Folder, err error) {
+	folderstore.mu.Lock()
 	filter := bson.M{"_id": folder.Id}
 	// NEVER more than 25
 	// if len(folder.Meta.Update) >= 25 {
@@ -77,19 +80,20 @@ func (folderstore *FolderStore) UpdateWithId(folder models.Folder) (folderUpdate
 	}
 
 	_, erro := db.Collection(FOLDERSSCOLLECTION).UpdateOne(context.TODO(), filter, update)
+	folderstore.mu.Unlock()
 	return folder, erro
 }
 
-func getOneWithancestors(ancestors []string) (*mongo.Cursor, error) {
+func getAncestors(ancestors []string) (*mongo.Cursor, error) {
 	cursor, err := db.Collection(FOLDERSSCOLLECTION).Find(context.Background(), bson.M{"_id": bson.M{"$in": ancestors}})
 	return cursor, err
 }
 
 // UpdateMetaAncestors is a function to add to the []Updated when changes happen to all acestores
 func (folderstore *FolderStore) UpdateMetaAncestors(ancestors []string, userID string) error {
-
+	folderstore.mu.Lock()
 	//Get the folder
-	cursor, err := getOneWithancestors(ancestors)
+	cursor, err := getAncestors(ancestors)
 
 	if err == nil {
 		defer cursor.Close(context.Background())
@@ -127,15 +131,17 @@ func (folderstore *FolderStore) UpdateMetaAncestors(ancestors []string, userID s
 			}
 		}
 	}
-
+	folderstore.mu.Unlock()
 	return err
 }
 
 // UpdateAncestorSize is a function to update the size of the folder's ancestors
-func (folderstore *FolderStore) UpdateAncestorSize(ancestors []string, size int64) error {
+func (folderstore *FolderStore) UpdateAncestorSize(ancestors []string, size int64, add bool) error {
+
+	folderstore.mu.Lock()
 
 	//Get the folder
-	cursor, err := getOneWithancestors(ancestors)
+	cursor, err := getAncestors(ancestors)
 
 	if err == nil {
 		defer cursor.Close(context.Background())
@@ -153,13 +159,21 @@ func (folderstore *FolderStore) UpdateAncestorSize(ancestors []string, size int6
 			bson.Unmarshal(bsonBytes, &folder)
 
 			// Change the size
-			newSize := folder.Size + size
+			var newSize int64
+
+			if add {
+				newSize = folder.Size + size
+			} else {
+				newSize = folder.Size - size
+			}
 
 			_, err := db.Collection(FOLDERSSCOLLECTION).UpdateOne(context.Background(), bson.M{"_id": folder.Id}, bson.D{{"$set", bson.M{"size": newSize}}})
 			if err != nil {
 				break
 			}
 		}
+		folderstore.mu.Unlock()
+
 	}
 
 	return err

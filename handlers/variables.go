@@ -11,5 +11,4 @@ var storage objectstorage.IFileStorage = &objectstorage.FileStorage{}
 
 var fileDB db.IFileStore = &db.FileStore{}
 var folderDB db.IFolderStore = &db.FolderStore{}
-var streamDB db.IStreamStore = &db.StreamStore{}
 var partsDB db.IPartStore = &db.PartStore{}

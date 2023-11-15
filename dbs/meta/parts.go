@@ -28,6 +28,14 @@ func (partstore *PartStore) GetOneByID(partID string) (models.Part, error) {
 	return part, err
 }
 
+// GetOneByID is to get a part by ID.
+func (partstore *PartStore) GetOneByFileAndPart(fileID string, partNum int) (models.Part, error) {
+
+	var part models.Part
+	err := db.Collection(PARTSCOLLECTION).FindOne(context.Background(), bson.M{"file_id": fileID, "part_number": partNum}).Decode(&part)
+	return part, err
+}
+
 // GetCursorByFileID is to get a cusror of parts part by file ID.
 func (partstore *PartStore) GetCursorByFileID(fileID string) (*mongo.Cursor, error) {
 
@@ -44,8 +52,14 @@ func (partstore *PartStore) GetCursorByStreamID(streamID string) (*mongo.Cursor,
 
 }
 
-// DeleteManyWithStream is to delete many parts related to the same stream.
-func (partstore *PartStore) DeleteManyWithStream(streamId string) error {
-	_, err := db.Collection(PARTSCOLLECTION).DeleteMany(context.Background(), bson.M{"stream_id": streamId})
+// DeleteManyWithFile is to delete many parts related to the same stream.
+func (partstore *PartStore) DeleteManyWithFile(fileId string) error {
+	_, err := db.Collection(PARTSCOLLECTION).DeleteMany(context.Background(), bson.M{"file_id": fileId})
+	return err
+}
+
+// DeleteManyWithBucket is to delete many parts related to the same stream.
+func (partstore *PartStore) DeleteManyWithBucket(bucketId string) error {
+	_, err := db.Collection(PARTSCOLLECTION).DeleteMany(context.Background(), bson.M{"upload_info.bucket": bucketId})
 	return err
 }
