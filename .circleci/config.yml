@@ -7,6 +7,7 @@ jobs:
       - image: cimg/base:current
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Docker ps
           command: docker ps -a
