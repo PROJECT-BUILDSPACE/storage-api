@@ -6,10 +6,10 @@ jobs:
   build:
     docker:
       - image: cimg/base:current
-        resource_class: project-buildspace/circleci
         auth:
           username: $DOCKER_USERNAME
           password: $DOCKER_PASSWORD
+    resource_class: project-buildspace/circleci
     steps:
       - checkout
       - setup_remote_docker
