@@ -10,10 +10,10 @@ jobs:
       - setup_remote_docker
       - run:
           name: Echo vars 1
-          command: echo DOCKER_PASSWORD
+          command: echo $DOCKER_PASSWORD
       - run:
           name: Echo vars 2
-          command: echo DOCKER_USERNAME
+          command: echo "$DOCKER_USERNAME"
       - run:
           name: Docker ps
           command: docker ps -a
@@ -23,11 +23,11 @@ jobs:
           command: echo DOCKER_PASSWORD | docker login --username DOCKER_USERNAME --password-stdin
 
 workflows:
-  build-docker-image-only:
-    jobs:
-      - docker/publish:
-          image: buildspace/storage-api
-          update-description: true
+  # build-docker-image-only:
+  #   jobs:
+  #     - docker/publish:
+  #         image: buildspace/storage-api
+  #         update-description: true
   build-docker-image-only-with-buildkit:
     jobs:
       - docker-login
