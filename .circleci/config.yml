@@ -8,19 +8,19 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      # - run:
-      #     name: Echo vars 1
-      #     command: echo $DOCKER_PASSWORD
-      # - run:
-      #     name: Echo vars 2
-      #     command: echo "$DOCKER_USERNAME"
+      - run:
+          name: Echo vars 1
+          command: echo $DOCKER_PASSWORD
+      - run:
+          name: Echo vars 2
+          command: echo "$DOCKER_USERNAME"
       - run:
           name: Docker ps
           command: docker ps -a
 
       - run:
           name: Docker login
-          command: docker login -u isotiropoulos -p cPiBFZ4,H~K%n.m
+          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
 
 workflows:
   # build-docker-image-only:
