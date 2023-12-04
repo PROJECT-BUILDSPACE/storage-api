@@ -2,13 +2,25 @@ version: 2.1
 orbs:
   kubernetes: circleci/kubernetes@1.3.1
   docker: circleci/docker@1.5.0
-jobs:
-  build:
-    docker:
-      - image: cimg/base:current
+executors:
+  docker-publisher: 
+    environment:
+      IMAGE_NAME: buildspace/storage-api
+    docker: # Each job requires specifying an executor
+    # (either docker, macos, or machine), see
+      - image: circleci/node:latest
         auth:
-          username: $DOCKER_USERNAME
-          password: $DOCKER_PASSWORD
+            username: $DOCKER_USERNAME
+            password: $DOCKER_PASSWORD1
+jobs:
+  publishLatestToHub: 
+        executor: docker-publisher
+  # build:
+  #   docker:
+  #     - image: cimg/base:current
+  #       auth:
+  #         username: $DOCKER_USERNAME
+  #         password: $DOCKER_PASSWORD
     resource_class: project-buildspace/circleci
     steps:
       - checkout
