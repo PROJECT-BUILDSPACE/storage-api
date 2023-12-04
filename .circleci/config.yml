@@ -2,38 +2,45 @@ version: '2.1'
 orbs:
   docker: circleci/docker@2.4.0
 jobs:
-  docker-login:
+  build-push:
     docker:
       - image: cimg/base:current
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Echo vars 1
-          command: echo $DOCKER_PASSWORD
-      - run:
-          name: Echo vars 2
-          command: echo "$DOCKER_USERNAME"
-      - run:
-          name: Docker ps
-          command: docker ps -a
+      # - run:
+      #     name: Init Swagger
+      #     command: swag init
+
+      # - run:
+      #     name: Echo vars 1
+      #     command: echo $DOCKER_PASSWORD
+      # - run:
+      #     name: Echo vars 2
+      #     command: echo "$DOCKER_USERNAME"
+      # - run:
+      #     name: Docker ps
+      #     command: docker ps -a
 
       - run:
           name: Docker login
           command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+      
+      - docker/check
+
+      - docker/build:
+          image: buildspace/storage-api
+          
+      - docker/push:
+          image: buildspace/storage-api
 
 workflows:
-  # build-docker-image-only:
-  #   jobs:
-  #     - docker/publish:
-  #         image: buildspace/storage-api
-  #         update-description: true
-  build-docker-image-only-with-buildkit:
+  build-push-docker-image:
     jobs:
-      - docker-login
-      - docker/publish:
-          image: buildspace/storage-api
-          # remote-docker-version: 20.10.12
-          update-description: true
-          use-buildkit: true
-          # use-remote-docker: true
+      - build-push
+      # - docker/publish:
+      #     image: buildspace/storage-api
+      #     # remote-docker-version: 20.10.12
+      #     update-description: true
+      #     use-buildkit: true
+      #     # use-remote-docker: true
