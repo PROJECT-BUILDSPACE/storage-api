@@ -14,7 +14,7 @@ executors:
             password: $DOCKER_PASSWORD1
 jobs:
   publishLatestToHub: 
-        executor: docker-publisher
+    executor: docker-publisher
   # build:
   #   docker:
   #     - image: cimg/base:current
@@ -47,3 +47,9 @@ jobs:
             docker build -t buildspace/storage-api:$TAG .
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
             docker push buildspace/storage-api:$TAG
+workflows:
+  version: 2
+  build-master:
+    jobs:
+       - publishLatestToHub
+          
