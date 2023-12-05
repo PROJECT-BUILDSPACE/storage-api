@@ -26,7 +26,9 @@ jobs:
           name: Docker login
           command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
       
-      - docker/check
+      - docker/check:
+          docker-password: DOCKER_PASSWORD
+          docker-username: DOCKER_USERNAME
 
       - docker/build:
           image: buildspace/storage-api
