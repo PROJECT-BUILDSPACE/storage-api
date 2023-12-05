@@ -19,6 +19,14 @@ jobs:
       - docker/push:
           image: buildspace/storage-api
 
+      - run:
+          name: Trigger deploy manifests pipeline
+          command: |
+          curl -X POST https://circleci.com/api/v2/project/github/PROJECT-BUILDSPACE/kubernetes-manifests/pipeline \
+            --header "Circle-Token: $CIRCLE_TOKEN" \
+            --header "content-type: application/json" \
+            --data  "{\"branch\":\"main\"}"
+
 workflows:
   build-push-docker-image:
     jobs:
