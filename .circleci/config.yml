@@ -8,14 +8,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run:
-          name: Init Swagger
-          command: swag init
-          
-      # - run:
-      #     name: Docker login
-      #     command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-      
+
       - docker/check:
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
@@ -30,9 +23,3 @@ workflows:
   build-push-docker-image:
     jobs:
       - build-push
-      # - docker/publish:
-      #     image: buildspace/storage-api
-      #     # remote-docker-version: 20.10.12
-      #     update-description: true
-      #     use-buildkit: true
-      #     # use-remote-docker: true
