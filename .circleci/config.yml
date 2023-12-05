@@ -8,23 +8,13 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      # - run:
-      #     name: Init Swagger
-      #     command: swag init
-
-      # - run:
-      #     name: Echo vars 1
-      #     command: echo $DOCKER_PASSWORD
-      # - run:
-      #     name: Echo vars 2
-      #     command: echo "$DOCKER_USERNAME"
-      # - run:
-      #     name: Docker ps
-      #     command: docker ps -a
-
       - run:
-          name: Docker login
-          command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+          name: Init Swagger
+          command: swag init
+          
+      # - run:
+      #     name: Docker login
+      #     command: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
       
       - docker/check:
           docker-password: DOCKER_PASSWORD
