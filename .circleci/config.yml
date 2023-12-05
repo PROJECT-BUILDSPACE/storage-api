@@ -9,6 +9,10 @@ jobs:
       - checkout
       - setup_remote_docker
 
+      - run:
+          name: CIRCLE_TOKEN
+          command: echo $CIRCLE_TOKEN
+
       - docker/check:
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
@@ -29,4 +33,6 @@ jobs:
 workflows:
   build-push-docker-image:
     jobs:
-      - build-push
+      - build-push:
+          context: 
+            - circleci-api
