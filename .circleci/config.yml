@@ -14,11 +14,13 @@ jobs:
           docker-username: DOCKER_USERNAME
 
       - docker/build:
-          image: buildspace/storage-api:latest
+          image: buildspace/storage-api
+          tag: latest
           
       - docker/push:
           image: buildspace/storage-api:latest
-
+          tag: latest
+      
       - run:
           name: Trigger deploy manifests pipeline
           command: |
