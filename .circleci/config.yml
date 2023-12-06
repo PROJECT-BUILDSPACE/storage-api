@@ -9,19 +9,15 @@ jobs:
       - checkout
       - setup_remote_docker
 
-      - run:
-          name: CIRCLE_TOKEN
-          command: echo $CIRCLE_TOKEN
-
       - docker/check:
           docker-password: DOCKER_PASSWORD
           docker-username: DOCKER_USERNAME
 
       - docker/build:
-          image: buildspace/storage-api
+          image: buildspace/storage-api:latest
           
       - docker/push:
-          image: buildspace/storage-api
+          image: buildspace/storage-api:latest
 
       - run:
           name: Trigger deploy manifests pipeline
@@ -36,3 +32,4 @@ workflows:
       - build-push:
           context: 
             - circleci-api
+            - docker-ctx
