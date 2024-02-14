@@ -834,6 +834,9 @@ const docTemplate = `{
         "models.Meta": {
             "type": "object",
             "properties": {
+                "coptasks": {
+                    "type": "string"
+                },
                 "creator": {
                     "description": "User's ID that created the file",
                     "type": "string"

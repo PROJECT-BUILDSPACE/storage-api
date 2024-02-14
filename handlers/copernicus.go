@@ -20,9 +20,26 @@ import (
 )
 
 // function to get list of all available datasets form CLIMATE service
-func GetCDSList(w http.ResponseWriter, r *http.Request) {
+func GetList(w http.ResponseWriter, r *http.Request) {
 
-	req, err := http.Get("https://cds.climate.copernicus.eu/api/v2/resources/")
+	params := mux.Vars(r)
+	service := params["service"]
+	base := ""
+
+	if service != "cds" && service != "ads" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
+		return
+	}
+
+	if service == "cds" {
+		base = "https://cds.climate.copernicus.eu/api/v2/resources/"
+	}
+
+	if service == "ads" {
+		base = "https://ads.atmosphere.copernicus.eu/api/v2/resources/"
+	}
+
+	req, err := http.Get(base)
 
 	//form request to destination
 	if err != nil {
@@ -53,49 +70,32 @@ func GetCDSList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(a)
 }
 
-// function to get list of all available datasets form ATMOSPHERE service
-// identical function w/ previous func
-func GetADSList(w http.ResponseWriter, r *http.Request) {
-
-	req, err := http.Get("https://ads.atmosphere.copernicus.eu/api/v2/resources/")
-
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0004")
-		return
-	}
-
-	resp, err := http.DefaultClient.Do(req.Request)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not complete request", err.Error(), "COP0005")
-	}
-
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Error in Response Body", err.Error(), "COP0003")
-	}
-
-	var a []string
-	json.Unmarshal(body, &a)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(a)
-}
-
 // function to get form for single dataset of CLIMATE service
 // user should first get form, then craft the appropirate request
-func GetCDSForm(w http.ResponseWriter, r *http.Request) {
+func GetForm(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 	datasetID := params["id"]
 
 	w.Header().Set("Content-Type", "application/json")
+	service := params["service"]
+	base := ""
 
-	//http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/monthly_averaged_reanalysis_by_hour_of_day/form.json
+	if service != "cds" && service != "ads" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
+		return
+	}
 
-	req, err := http.Get("http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/" + string(datasetID) + "/form.json")
+	if service == "cds" {
+		base = "http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/"
+	}
+
+	//TO BE CHANGED!! ADS CURRENTLY UNAVAILABLE
+	if service == "ads" {
+		base = "http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/"
+	}
+
+	req, err := http.Get(base + string(datasetID) + "/form.json")
 
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Invalid Dataset Value", err.Error(), "FORM001")
