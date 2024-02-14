@@ -23,6 +23,9 @@ type IFileStore interface {
 	// Get file with params
 	GetOneByID(fileID string) (models.File, error)
 
+	// Get file with params
+	GetOneByTaskID(taskID string) (models.File, error)
+
 	// Get many with params
 	GetCursorByFolderID(folderID string) (*mongo.Cursor, error)
 

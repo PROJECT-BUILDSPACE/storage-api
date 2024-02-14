@@ -503,3 +503,360 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(retObject)
 }
+
+func CopySubFile(fileID string, newDest string, bucketID string, nName string, user string) {
+
+	cmBody := models.CopyMoveBody{
+
+		Id:          fileID,
+		Destination: newDest,
+		NewName:     nName,
+	}
+
+	file, err := fileDB.GetOneByID(cmBody.Id)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusBadRequest, "File doesn't exist.", err.Error(), "FIL0043")
+		return
+	}
+
+	var newName string
+	if cmBody.NewName == "" {
+		newName = file.Meta.Title
+	} else {
+		newName = cmBody.NewName
+	}
+
+	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FIL0044")
+		return
+	}
+
+	// Check if title is illegal
+	filesCursor, err := fileDB.GetCursorByFolderID(cmBody.Destination)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0045")
+		return
+	}
+	defer filesCursor.Close(context.Background())
+
+	for filesCursor.Next(context.Background()) {
+		var result bson.M
+		var inFile models.File
+		if err := filesCursor.Decode(&result); err != nil {
+			//utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FIL0046")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &inFile)
+		if inFile.Meta.Title == newName {
+			//utils.RespondWithError(w, http.StatusConflict, "File Exists.", "Cannot copy file to destination with this name since it is already taken.", "FIL0047")
+			return
+		}
+	}
+
+	//bucketID := r.Header.Get("X-Group-Id")
+	newFileId, err := utils.GenerateUUID()
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating file's ID.", err.Error(), "FIL0048")
+		return
+	}
+	partsCursor, err := partsDB.GetCursorByFileID(cmBody.Id)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving parts.", err.Error(), "FIL0017")
+		return
+	}
+	defer partsCursor.Close(context.Background())
+
+	for partsCursor.Next(context.Background()) {
+		var result bson.M
+		var part models.Part
+		if err := partsCursor.Decode(&result); err != nil {
+			//utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FIL0068")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &part)
+
+		newPartID, err := utils.GenerateUUID()
+		if err != nil {
+			//utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating part's ID.", err.Error(), "FIL0073")
+			return
+		}
+
+		err = storage.CopyFile(part.Id, newPartID, bucketID)
+		if err != nil {
+			//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0050")
+			return
+		}
+
+		part.Id = newPartID
+		part.FileID = newFileId
+		err = partsDB.InsertOne(part)
+		if err != nil {
+			//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0072")
+			return
+		}
+	}
+
+	// Insert file
+	file.FolderID = cmBody.Destination
+	// Create a new `Updated` struct
+	updated := models.Updated{
+		User: user,
+		Date: time.Now(),
+	}
+	// file.Meta.Update = []models.Updated{updated}
+	file.Meta.Update.User = updated.User
+	file.Meta.Update.Date = updated.Date
+	file.Id = newFileId
+	file.Meta.Title = newName
+
+	ancestors := append(newParent.Ancestors, file.FolderID)
+	file.Ancestors = ancestors
+	err = fileDB.InsertOne(file)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0049")
+		return
+	}
+
+	// Update New Parent Folder
+	newParent.Files = append(newParent.Files, file.Id)
+	// newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	newParent.Meta.Update.User = updated.User
+	newParent.Meta.Update.Date = updated.Date
+
+	_, err = folderDB.UpdateWithId(newParent)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
+		return
+	}
+
+	// Update Ancestores Size
+	err = folderDB.UpdateAncestorSize(ancestors, file.Size, true)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0074")
+		return
+	}
+
+}
+
+func CopySubFolder(folderID string, newDest string, bucketID string, nName string, user string) string {
+
+	cmBody := models.CopyMoveBody{
+
+		Id:          folderID,
+		Destination: newDest,
+		NewName:     nName,
+	}
+
+	folder, err := folderDB.GetOneByID(cmBody.Id)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusBadRequest, "File doesn't exist.", err.Error(), "FIL0043")
+		return ""
+	}
+
+	subFolders := folder.Folders
+	subFiles := folder.Files
+
+	folder.Folders = make([]string, 0)
+	folder.Files = make([]string, 0)
+
+	var newName string
+	if cmBody.NewName == "" {
+		newName = folder.Meta.Title
+	} else {
+		newName = cmBody.NewName
+	}
+
+	//Get Children and Files lists
+	//Get Destination of New Folder
+	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	if err != nil {
+		//fmt.Errorf("Destination doesn't exist.: %v", err, "FOL0036")
+		return ""
+	}
+
+	newFolderId, err := utils.GenerateUUID()
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating file's ID.", err.Error(), "FIL0048")
+		return ""
+	}
+
+	folder.Ancestors = newParent.Ancestors
+
+	// Insert file
+	folder.Parent = cmBody.Destination
+	// Create a new `Updated` struct
+	updated := models.Updated{
+		User: user,
+		Date: time.Now(),
+	}
+	// file.Meta.Update = []models.Updated{updated}
+	folder.Meta.Update.User = updated.User
+	folder.Meta.Update.Date = updated.Date
+	folder.Id = newFolderId
+	folder.Meta.Title = newName
+
+	ancestors := append(newParent.Ancestors, folder.Parent)
+	folder.Ancestors = ancestors
+	err = folderDB.InsertOne(folder)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0049")
+		return ""
+	}
+
+	// Update New Parent Folder
+	newParent.Folders = append(newParent.Folders, folder.Id)
+	// newParent.Meta.Update = append(newParent.Meta.Update, updated)
+	newParent.Meta.Update.User = updated.User
+	newParent.Meta.Update.Date = updated.Date
+
+	_, err = folderDB.UpdateWithId(newParent)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
+		return ""
+	}
+
+	// Update Ancestores Size
+	err = folderDB.UpdateAncestorSize(ancestors, folder.Size, true)
+	if err != nil {
+		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0074")
+		return ""
+	}
+
+	//COPY SUBFILES
+	for _, element := range subFiles {
+		CopySubFile(element, newFolderId, bucketID, "", user)
+	}
+	//COPY SUBFOLDERS
+	for _, element := range subFolders {
+		CopySubFolder(element, newFolderId, bucketID, "", user)
+	}
+
+	return newFolderId
+}
+
+func CopyFolder(w http.ResponseWriter, r *http.Request) {
+
+	// Resolve Claims
+	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "FOL0036")
+		return
+	}
+
+	var cmBody models.CopyMoveBody
+	err = json.NewDecoder(r.Body).Decode(&cmBody)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve request.", err.Error(), "FOL0037")
+		return
+	}
+
+	// Chech if title is legal
+
+	folderCursor, err := folderDB.GetCursorByParent(cmBody.Destination)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0039")
+		return
+	}
+	defer folderCursor.Close(context.Background())
+
+	for folderCursor.Next(context.Background()) {
+		var result bson.M
+		var inFile models.File
+		if err := folderCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FOL0040")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &inFile)
+		if inFile.Meta.Title == cmBody.NewName {
+			utils.RespondWithError(w, http.StatusConflict, "Folder Exists.", "Cannot copy file to destination with this name since it is already taken.", "FOL0041")
+			return
+		}
+	}
+
+	// Call helper function to recursivelly copy target folder and all sub files and folders
+
+	var newFLID = CopySubFolder(cmBody.Id, cmBody.Destination, r.Header.Get("X-Group-Id"), cmBody.NewName, claims.Subject)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	// Load copied folder to generate response
+
+	folder, err := folderDB.GetOneByID(newFLID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not locate copied folder.", err.Error(), "FOL0042")
+		return
+	}
+	json.NewEncoder(w).Encode(folder) //response should be mongo obj or resp w/ error
+}
+
+func MoveFolder(w http.ResponseWriter, r *http.Request) {
+
+	// Resolve Claims
+	_, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "FOL0043")
+		return
+	}
+
+	var cmBody models.CopyMoveBody
+	err = json.NewDecoder(r.Body).Decode(&cmBody)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve request.", err.Error(), "FOL0043")
+		return
+	}
+
+	// Chech if title is legal
+
+	folderCursor, err := folderDB.GetCursorByParent(cmBody.Destination)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FOL0045")
+		return
+	}
+	defer folderCursor.Close(context.Background())
+
+	for folderCursor.Next(context.Background()) {
+		var result bson.M
+		var inFile models.File
+		if err := folderCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FOL0046")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &inFile)
+		if inFile.Meta.Title == cmBody.NewName {
+			utils.RespondWithError(w, http.StatusConflict, "Folder Exists.", "Cannot copy file to destination with this name since it is already taken.", "FOL0047")
+			return
+		}
+	}
+
+	//Get folder document
+	folder, err := folderDB.GetOneByID(cmBody.Id)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Folder doesn't exist.", err.Error(), "FOL0048")
+		return
+	}
+
+	//Get new parent folder
+	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FOL0049")
+		return
+	}
+
+	//Check if destination is child (or descendant) of target file
+	for _, ans := range newParent.Ancestors {
+		if ans == cmBody.Id {
+			utils.RespondWithError(w, http.StatusBadRequest, "Destination can't be child of target folder", err.Error(), "FOL0050")
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(folder)
+}

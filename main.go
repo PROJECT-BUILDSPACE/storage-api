@@ -68,6 +68,7 @@ func main() {
 	objectstorage.Init()
 	db.NewDB()
 	auth.Init()
+	handle.Init()
 	r := mux.NewRouter()
 	r.Methods("OPTIONS").HandlerFunc(optionsHandler)
 
@@ -105,12 +106,19 @@ func main() {
 	}
 
 	// Folder-wise
+	r.HandleFunc("/folder/copy", mid.AuthMiddleware(handle.CopyFolder)).Methods("POST")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.PostFolder)).Methods("POST")
 	r.HandleFunc("/folder/{id}", mid.AuthMiddleware(handle.DeleteFolder)).Methods("DELETE")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.UpdateFolder)).Methods("PUT")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("id", "{folderId}").Methods("GET")
 	r.HandleFunc("/folder/list", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
-	r.HandleFunc("/folder/TEST2", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
+
+	// Copernicus
+	r.HandleFunc("/copernicus/{service}/getall", mid.NaiveAuthMiddleware(handle.GetCDSList)).Methods("GET")
+	// r.HandleFunc("/copernicus/getallads", mid.NaiveAuthMiddleware(handle.GetADSList)).Methods("GET")
+	r.HandleFunc("/copernicus/{service}/getform/{id}", mid.NaiveAuthMiddleware(handle.GetCDSForm)).Methods("GET")
+	r.HandleFunc("/copernicus/{service}/getdataset", mid.NaiveAuthMiddleware(handle.GetDataset)).Methods("POST")
+	r.HandleFunc("/copernicus/{service}/getstatus/{id}", mid.NaiveAuthMiddleware(handle.GetStatus)).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 

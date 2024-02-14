@@ -35,6 +35,7 @@ type Meta struct {
 	Write        []string  `json:"write" bson:"write"`                 // Array of user ids with writing rights
 	Tags         []string  `json:"tags" bson:"tags"`                   // Array of tags for the file
 	Update       Updated   `json:"update" bson:"update"`               // Array with data that store the updates
+	CopTasks     string    `json:"coptasks,omitempty" bson:"coptasks"`
 }
 
 // Updated contains information about the versions of an file
@@ -108,4 +109,99 @@ type ErrorReport struct {
 	Reason         string `json:"reason"`          // Reason of the error
 	Status         int    `json:"status"`          // Status of the error
 	InternalStatus string `json:"internal_status"` // Status of the error
+}
+
+// Input for the request to send to Copericus API
+type CopernicusInput struct {
+	DatasetName string                 `json:"datasetname"` //Name of specific Copernicus API
+	Body        map[string]interface{} `json:"body"`        // Request body
+}
+
+type CopernicusResponse struct {
+	State     string `json:"state"`    //State of files to be downloaded
+	Location  string `json:"location"` // Download link
+	RequestID string `json:"request_id"`
+	//Auth       string `json:"auth"`         // Credentials for authentication
+}
+
+type Form struct {
+	Css      string  `json:"css,omitempty" bson:"css"`
+	Details  Details `json:"details,omitempty" bson:"description"`
+	Help     string  `json:"help,omitempty" bson:"help"`
+	Label    string  `json:"label,omitempty" bson:"label"`
+	Name     string  `json:"name,omitempty" bson:"name"`
+	Required bool    `json:"required,omitempty" bson:"required"`
+	Type     string  `json:"type,omitempty" bson:"type"`
+}
+
+type Details struct {
+	Columns           int               `json:"columns,omitempty" bson:"columns"`
+	ID                int               `json:"id,omitempty" bson:"id"`
+	Labels            map[string]string `json:"labels,omitempty" bson:"labels"`
+	Values            []string          `json:"values,omitempty" bson:"values"`
+	Accordion         bool              `json:"accordion,omitempty" bson:"accordion"`
+	AccordionGroups   bool              `json:"accordionGroups,omitempty" bson:"accordionGroups"`
+	Displayaslist     bool              `json:"displayaslist,omitempty" bson:"displayaslist"`
+	Fullheight        bool              `json:"fullheight,omitempty" bson:"fullheight"`
+	Withmap           bool              `json:"withmap,omitempty" bson:"withmap"`
+	Wrapping          bool              `json:"wrapping,omitempty" bson:"wrapping"`
+	Precision         int               `json:"precision,omitempty" bson:"precision"`
+	MaximumSelections int               `json:"maximumSelections,omitempty" bson:"maximumSelections"`
+	TextFile          string            `json:"text:file,omitempty" bson:"text:file"`
+	Information       string            `json:"information,omitempty" bson:"information"`
+	AccordionOptions  *AccordionOpts    `json:"accordionOptions,omitempty" bson:"accordionOptions"`
+	Default           []interface{}     `json:"default,omitempty" bson:"default"`
+	Extentlabels      []string          `json:"extentlabels,omitempty" bson:"extentlabels"`
+	Groups            []interface{}     `json:"groups,omitempty" bson:"groups"`
+	Range             *RangeLocal       `json:"range,omitempty" bson:"range"`
+	ChangeVisible     bool              `json:"changevisible,omitempty" bson:"changevisible"`
+	ConCat            string            `json:"concat,omitempty" bson:"concat"`
+	Latidude          Coords            `json:"latitude,omitempty" bson:"latitude"`
+	Longitude         Coords            `json:"longitude,omitempty" bson:"longidude"`
+	Projection        Projection        `json:"projection,omitempty" bson:"projrction"`
+	Text              string            `json:"text,omitempty" bson:"text"`
+	Fields            []Fields          `json:"fields,omitempty" bson:"fields"`
+}
+
+type AccordionOpts struct {
+	OpenGroups interface{} `json:"openGroups,omitempty" bson:"openGroups"`
+	Searchable bool        `json:"searchable,omitempty" bson:"searchable"`
+}
+
+type RangeLocal struct {
+	E float32 `json:"e,omitempty" bson:"e"`
+	N float32 `json:"n,omitempty" bson:"n"`
+	W float32 `json:"w,omitempty" bson:"w"`
+	S float32 `json:"s,omitempty" bson:"s"`
+}
+
+type FormRespLocal struct {
+	Name     string `json:"name,omitempty" bson:"name"`
+	Required bool   `json:"required,omitempty" bson:"required"`
+	Type     string `json:"type,omitempty" bson:"type"`
+}
+
+type Coords struct {
+	Default   int        `json:"default,omitempty" bson:"default"`
+	Precision int        `json:"precision,omitempty" bson:"precision"`
+	Range     CoordRange `json:"range,omitempty" bson:"range"`
+}
+
+type CoordRange struct {
+	Min int `json:"min,omitempty" bson:"min"`
+	Max int `json:"max,omitempty" bson:"max"`
+}
+
+type Projection struct {
+	ID      int  `json:"id,omitempty" bson:"id"`
+	Overlay bool `json:"overlay,omitempty" bson:"overlay"`
+	Use     bool `json:"use,omitempty" bson:"use"`
+}
+
+type Fields struct {
+	Comments    string `json:"comments,omitempty" bson:"comments"`
+	MaxLength   int    `json:"maxlength,omitempty" bson:"maxlength"`
+	Placeholder string `json:"placeholder,omitempty" bson:"placeholder"`
+	Required    bool   `json:"required,omitempty" bson:"required"`
+	Type        string `json:"type,omitempty" bson:"type"`
 }

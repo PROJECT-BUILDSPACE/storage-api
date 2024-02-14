@@ -35,6 +35,15 @@ func (filestore *FileStore) GetOneByID(fileID string) (models.File, error) {
 	return file, err
 }
 
+// GetOneByTaskID is to get a file by its taskID.
+func (filestore *FileStore) GetOneByTaskID(taskID string) (models.File, error) {
+
+	var file models.File
+
+	err := db.Collection(FILESCOLLECTION).FindOne(context.Background(), bson.M{"meta.coptasks": taskID}).Decode(&file)
+	return file, err
+}
+
 // GetCursorByFolderID is to get a cursor with files from a particular folder.
 func (filestore *FileStore) GetCursorByFolderID(folderID string) (*mongo.Cursor, error) {
 
@@ -63,6 +72,7 @@ func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.Fi
 			"ancestors":      file.Ancestors,
 			"file_type":      file.FileType,
 			"size":           file.Size,
+			"total":          file.Total,
 		},
 	}
 	_, erro := db.Collection(FILESCOLLECTION).UpdateOne(context.TODO(), filter, update)
