@@ -28,7 +28,6 @@ func Init() {
 	if COPERNICUS_BUCKET_ID == "" {
 		COPERNICUS_BUCKET_ID = "d75cbf55-a6a7-49d2-ab3c-7d6a31a09337"
 	}
-
 	if ADS_UID == "" {
 		ADS_UID = "17432"
 	}

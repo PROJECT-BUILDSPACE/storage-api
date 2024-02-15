@@ -19,7 +19,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// function to get list of all available datasets form CLIMATE service
+// GetList handles the /copernicus/{service}/getall GET request.
+// @Summary Get a list of all available datasets related to a specific service.
+// @Description This is the endopoint to get a list of all available datasets of a service.
+// @Description Currently supported services are "ads" and "cds"
+// @Tags Copernicus
+// @Produce json
+// @Param service path string true "Service (currently available 'ads' and 'cds')"
+// @Success 202 {object} array "Accepted"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Failure 503 {object} models.ErrorReport "Service Anavailable"
+// @Router /copernicus/{service}/getall [get]
 func GetList(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
@@ -27,7 +38,7 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 	base := ""
 
 	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
+		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
 		return
 	}
 
@@ -58,7 +69,7 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 	//read body
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Error in Response Body", err.Error(), "COP0003")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in Response Body", err.Error(), "COP0003")
 	}
 
 	//encode response into json
@@ -70,8 +81,19 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(a)
 }
 
-// function to get form for single dataset of CLIMATE service
-// user should first get form, then craft the appropirate request
+// GetForm handles the /copernicus/{service}/getform/{id} GET request.
+// @Summary Get the form of a dataset that is related to a specific service.
+// @Description A form is a set of rules indicating which parameters are neccessary for the dataset to be retrieved.
+// @Description Please note that some parameters cannot be used with other. The selection rules are also included in the forms.
+// @Tags Copernicus
+// @Produce json
+// @Param service path string true "Service (currently available 'ads' and 'cds')"
+// @Param id path string true "ID of the dataset of interest"
+// @Success 200 {object} models.Form "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Failure 503 {object} models.ErrorReport "Service Anavailable"
+// @Router /copernicus/{service}/getform/{id} [get]
 func GetForm(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
@@ -82,7 +104,7 @@ func GetForm(w http.ResponseWriter, r *http.Request) {
 	base := ""
 
 	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
+		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
 		return
 	}
 
@@ -115,20 +137,35 @@ func GetForm(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(resp.Body).Decode(&myform)
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not handel response", err.Error(), "FORM003")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not handle response", err.Error(), "FORM003")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(myform)
 }
 
-// forms a request for a single dataset CLIMATE
-// save any VALID requests to database as a file
-// + faulty requests handling
-// also task id is saved
-func GetDataset(w http.ResponseWriter, r *http.Request) {
+// PostDataset handles the /copernicus/{service}/dataset POST request.
+// @Summary Post a request for a specific dataset (create a Copernicus task that will make a dataset available for download).
+// @Description The request can be specified by the body of the request using the parameters of the dataset.
+// @Description Please note that some parameters cannot be used with other. For the dataset parameters' rules consider the dataset's form.
+// @Tags Copernicus
+// @Accept json
+// @Produce json
+// @Param service path string true "Service (currently available 'ads' and 'cds')"
+// @Param body body models.CopernicusInput  true "Request body"
+// @Success 200 {object} models.CopernicusResponse "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Failure 503 {object} models.ErrorReport "Service Anavailable"
+// @Router /copernicus/{service}/dataset [post]
+func PostDataset(w http.ResponseWriter, r *http.Request) {
+
+	// forms a request for a single dataset CLIMATE
+	// save any VALID requests to database as a file
+	// + faulty requests handling
+	// also task id is saved
 
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -136,16 +173,16 @@ func GetDataset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var test models.CopernicusInput
-	err = json.NewDecoder(r.Body).Decode(&test)
+	var reqBody models.CopernicusInput
+	err = json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve request.", err.Error(), "COP0005")
 		return
 	}
 
-	name := test.DatasetName
+	name := reqBody.DatasetName
 	//encode input to json
-	content, err := json.Marshal(test.Body)
+	content, err := json.Marshal(reqBody.Body)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve content.", err.Error(), "COP0006")
 		return
@@ -156,7 +193,7 @@ func GetDataset(w http.ResponseWriter, r *http.Request) {
 	base := ""
 
 	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0016")
+		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", err.Error(), "COP0016")
 		return
 	}
 
@@ -193,7 +230,7 @@ func GetDataset(w http.ResponseWriter, r *http.Request) {
 
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could Read Copernicus Response", err.Error(), "COP0009")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could Read Copernicus Response", err.Error(), "COP0009")
 	}
 
 	var b models.CopernicusResponse
@@ -221,7 +258,7 @@ func GetDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := name
-	postFile.FileType = test.Body["format"].(string)
+	postFile.FileType = reqBody.Body["format"].(string)
 	postFile.OriginalTitle = title
 	postFile.Size = 0
 	postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
@@ -255,13 +292,25 @@ func GetDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(b)
 }
 
-// using task id of a request first checks if task in completed then proceeds to dowload data to db if so
+// GetStatus handles the /copernicus/{service}/dataset/{id} GET request.
+// @Summary Download dataset (if the Copernicus task is completed).
+// @Description This endpoint checks the status of a Copernicus task and if it is completed it downloads the file and stores it in MinIO (under the Copernicus public bucket).
+// @Description In case of uncompleted task, the response is a json specifying the current status.
+// @Tags Copernicus
+// @Produce json
+// @Param service path string true "Service (currently available 'ads' and 'cds')"
+// @Param id path string true "ID of the dataset to be downloaded"
+// @Success 200 {object} models.File "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Failure 503 {object} models.ErrorReport "Service Anavailable"
+// @Router /copernicus/{service}/dataset/{id} [get]
 func GetStatus(w http.ResponseWriter, r *http.Request) {
-
+	// using task id of a request first checks if task in completed then proceeds to dowload data to db if so
 	//get claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -275,7 +324,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 	base := ""
 
 	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0016")
+		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", err.Error(), "COP0016")
 		return
 	}
 
@@ -289,7 +338,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 	req, err := http.Get(base + string(taskID))
 
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0017")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Destination doesn't exist.", err.Error(), "COP0017")
 		return
 	}
 
@@ -474,7 +523,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		}
 
 		json.NewEncoder(w).Encode(postFile)
-		w.WriteHeader(http.StatusAccepted)
+		w.WriteHeader(http.StatusOK)
 	}
 
 }

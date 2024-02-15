@@ -116,6 +116,220 @@
                 }
             }
         },
+        "/copernicus/{service}/dataset": {
+            "post": {
+                "description": "The request can be specified by the body of the request using the parameters of the dataset.\nPlease note that some parameters cannot be used with other. For the dataset parameters' rules consider the dataset's form.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Copernicus"
+                ],
+                "summary": "Post a request for a specific dataset (create a Copernicus task that will make a dataset available for download).",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service (currently available 'ads' and 'cds')",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CopernicusInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CopernicusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Anavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/copernicus/{service}/dataset/{id}": {
+            "get": {
+                "description": "This endpoint checks the status of a Copernicus task and if it is completed it downloads the file and stores it in MinIO (under the Copernicus public bucket).\nIn case of uncompleted task, the response is a json specifying the current status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Copernicus"
+                ],
+                "summary": "Download dataset (if the Copernicus task is completed).",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service (currently available 'ads' and 'cds')",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of the dataset to be downloaded",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.File"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Anavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/copernicus/{service}/getall": {
+            "get": {
+                "description": "This is the endopoint to get a list of all available datasets of a service.\nCurrently supported services are \"ads\" and \"cds\"",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Copernicus"
+                ],
+                "summary": "Get a list of all available datasets related to a specific service.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service (currently available 'ads' and 'cds')",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "array"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Anavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/copernicus/{service}/getform/{id}": {
+            "get": {
+                "description": "A form is a set of rules indicating which parameters are neccessary for the dataset to be retrieved.\nPlease note that some parameters cannot be used with other. The selection rules are also included in the forms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Copernicus"
+                ],
+                "summary": "Get the form of a dataset that is related to a specific service.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service (currently available 'ads' and 'cds')",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID of the dataset of interest",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Form"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Anavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
         "/file": {
             "put": {
                 "security": [
@@ -657,7 +871,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": "OK",
+                        "description": "Accepted",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -676,6 +890,15 @@
         }
     },
     "definitions": {
+        "models.AccordionOpts": {
+            "type": "object",
+            "properties": {
+                "openGroups": {},
+                "searchable": {
+                    "type": "boolean"
+                }
+            }
+        },
         "models.Bucket": {
             "type": "object",
             "properties": {
@@ -687,6 +910,158 @@
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "models.CoordRange": {
+            "type": "object",
+            "properties": {
+                "max": {
+                    "type": "integer"
+                },
+                "min": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Coords": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "type": "integer"
+                },
+                "precision": {
+                    "type": "integer"
+                },
+                "range": {
+                    "$ref": "#/definitions/models.CoordRange"
+                }
+            }
+        },
+        "models.CopernicusInput": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "description": "Request body",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "datasetname": {
+                    "description": "Name of specific Copernicus API",
+                    "type": "string"
+                }
+            }
+        },
+        "models.CopernicusResponse": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "description": "Download link",
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "state": {
+                    "description": "State of files to be downloaded",
+                    "type": "string"
+                }
+            }
+        },
+        "models.Details": {
+            "type": "object",
+            "properties": {
+                "accordion": {
+                    "type": "boolean"
+                },
+                "accordionGroups": {
+                    "type": "boolean"
+                },
+                "accordionOptions": {
+                    "$ref": "#/definitions/models.AccordionOpts"
+                },
+                "changevisible": {
+                    "type": "boolean"
+                },
+                "columns": {
+                    "type": "integer"
+                },
+                "concat": {
+                    "type": "string"
+                },
+                "default": {
+                    "type": "array",
+                    "items": {}
+                },
+                "displayaslist": {
+                    "type": "boolean"
+                },
+                "extentlabels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Fields"
+                    }
+                },
+                "fullheight": {
+                    "type": "boolean"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {}
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "information": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "latitude": {
+                    "$ref": "#/definitions/models.Coords"
+                },
+                "longitude": {
+                    "$ref": "#/definitions/models.Coords"
+                },
+                "maximumSelections": {
+                    "type": "integer"
+                },
+                "precision": {
+                    "type": "integer"
+                },
+                "projection": {
+                    "$ref": "#/definitions/models.Projection"
+                },
+                "range": {
+                    "$ref": "#/definitions/models.RangeLocal"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "text:file": {
+                    "type": "string"
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "withmap": {
+                    "type": "boolean"
+                },
+                "wrapping": {
+                    "type": "boolean"
                 }
             }
         },
@@ -708,6 +1083,26 @@
                 "status": {
                     "description": "Status of the error",
                     "type": "integer"
+                }
+            }
+        },
+        "models.Fields": {
+            "type": "object",
+            "properties": {
+                "comments": {
+                    "type": "string"
+                },
+                "maxlength": {
+                    "type": "integer"
+                },
+                "placeholder": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -822,6 +1217,32 @@
                 }
             }
         },
+        "models.Form": {
+            "type": "object",
+            "properties": {
+                "css": {
+                    "type": "string"
+                },
+                "details": {
+                    "$ref": "#/definitions/models.Details"
+                },
+                "help": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Meta": {
             "type": "object",
             "properties": {
@@ -872,6 +1293,37 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "models.Projection": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "overlay": {
+                    "type": "boolean"
+                },
+                "use": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.RangeLocal": {
+            "type": "object",
+            "properties": {
+                "e": {
+                    "type": "number"
+                },
+                "n": {
+                    "type": "number"
+                },
+                "s": {
+                    "type": "number"
+                },
+                "w": {
+                    "type": "number"
                 }
             }
         },

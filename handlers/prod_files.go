@@ -243,7 +243,7 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 // @Tags Files
 // @Produce json
 // @Param id query string true "File ID"
-// @Success 202 {array} byte "OK"
+// @Success 202 {array} byte "Accepted"
 // @Failure 400 {object} models.ErrorReport "Not Found"
 // @Router /info/file [get]
 // @Security BearerAuth
