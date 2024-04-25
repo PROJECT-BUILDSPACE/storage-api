@@ -25,7 +25,7 @@ type Bucket struct {
 	CreationDate time.Time `json:"creation_date"`
 }
 
-// Meta contains Metadata of JADS files
+// Meta contains Metadata of BUILDSPACE files
 type Meta struct {
 	Creator      string    `json:"creator" bson:"creator"`             // User's ID that created the file
 	Description  string    `json:"description" bson:"description"`     // Array of descriptions for the file
@@ -35,7 +35,35 @@ type Meta struct {
 	Write        []string  `json:"write" bson:"write"`                 // Array of user ids with writing rights
 	Tags         []string  `json:"tags" bson:"tags"`                   // Array of tags for the file
 	Update       Updated   `json:"update" bson:"update"`               // Array with data that store the updates
-	CopTasks     string    `json:"coptasks,omitempty" bson:"coptasks"`
+}
+
+// CopernicusTask contains information on the response of a Copericus task
+type CopernicusTask struct {
+	State     string              `json:"state"`    //State of files to be downloaded
+	Location  string              `json:"location"` // Download link
+	RequestID string              `json:"request_id"`
+	Message   string              `json:"message,omitempty"` //If state=denied then this gives the reason the request was not accepted. Otherwise this is not present.
+	Error     CopernicusTaskError `json:"error,omitempty"`   // Only in case of task failed
+
+}
+
+// CopernicusTaskError contains information in cas state of task is "failed"
+type CopernicusTaskError struct {
+	Reason    string      `json:"reason"`              //Reason of Failure
+	Message   string      `json:"message"`             // Message to the user
+	Url       string      `json:"url,omitempty"`       // A URI which is unique to a particular class of error
+	Context   interface{} `json:"context,omitempty"`   // An arbitrary JSON object containing additional information for debugging
+	Permanent bool        `json:"permanent,omitempty"` // If this is true then the request should not be retried unchanged
+	Who       string      `json:"who,omitempty"`       // Is this a problem in the server or the request (server or client)?
+}
+
+// CopernicusDetails contains information related to the Copernicus files
+type CopernicusDetails struct {
+	TaskID      string              `json:"task_id" bson:"task_id"`         // Copernicus Task
+	Service     string              `json:"sercice" bson:"service"`         // Dataset's related service
+	Fingerprint string              `json:"fingerprint" bson:"fingerprint"` // Fingerprint of the dataset (used to identify datasets based on request parameters)
+	Status      string              `json:"status" bson:"status"`           // Copernicus task status
+	Error       CopernicusTaskError `json:"error,omitempty" bson:"error"`   // Error details in case of status failed
 }
 
 // Updated contains information about the versions of an file
@@ -46,14 +74,15 @@ type Updated struct {
 
 // File contains information about a file.
 type File struct {
-	Id            string   `json:"_id" bson:"_id"`                       // File's id
-	Meta          Meta     `json:"meta" bson:"meta"`                     // File's Metadata
-	FolderID      string   `json:"folder" bson:"folder"`                 // Parent folder of the file
-	Ancestors     []string `json:"ancestors" bson:"ancestors"`           // All ancestor folders
-	OriginalTitle string   `json:"original_title" bson:"original_title"` // The file's title before uploading
-	FileType      string   `json:"file_type" bson:"file_type"`           // The file's extention
-	Size          int64    `json:"size" bson:"size"`
-	Total         int      `json:"total" bson:"total"`
+	Id                string            `json:"_id" bson:"_id"`                       // File's id
+	Meta              Meta              `json:"meta" bson:"meta"`                     // File's Metadata
+	FolderID          string            `json:"folder" bson:"folder"`                 // Parent folder of the file
+	Ancestors         []string          `json:"ancestors" bson:"ancestors"`           // All ancestor folders
+	OriginalTitle     string            `json:"original_title" bson:"original_title"` // The file's title before uploading
+	FileType          string            `json:"file_type" bson:"file_type"`           // The file's extention
+	Size              int64             `json:"size" bson:"size"`
+	Total             int               `json:"total" bson:"total"`
+	CopernicusDetails CopernicusDetails `json:"copernicus_details,omitempty" bson:"copernicus_details"` // Details related to Copernicus datasets
 }
 
 // Part contains information about a file's stream.
@@ -115,13 +144,6 @@ type ErrorReport struct {
 type CopernicusInput struct {
 	DatasetName string                 `json:"datasetname"` //Name of specific Copernicus API
 	Body        map[string]interface{} `json:"body"`        // Request body
-}
-
-type CopernicusResponse struct {
-	State     string `json:"state"`    //State of files to be downloaded
-	Location  string `json:"location"` // Download link
-	RequestID string `json:"request_id"`
-	//Auth       string `json:"auth"`         // Credentials for authentication
 }
 
 type Form struct {

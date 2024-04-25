@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/isotiropoulos/storage-api/globals"
 	"github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,7 +47,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if name already exists
-	foldersCursor, err := folderDB.GetCursorByParent(folder.Parent)
+	foldersCursor, err := globals.FolderDB.GetCursorByParent(folder.Parent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FOL0003")
 		return
@@ -89,7 +90,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 
 	if folder.Parent != "" {
 		//Get the folder
-		object, err := folderDB.GetOneByID(folder.Parent)
+		object, err := globals.FolderDB.GetOneByID(folder.Parent)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusNotFound, "Parent folder don't exist.", err.Error(), "FOL0007")
 			return
@@ -112,7 +113,7 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 	folder.Size = 0
 	folder.Folders = make([]string, 0)
 
-	err = folderDB.InsertOne(folder)
+	err = globals.FolderDB.InsertOne(folder)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could post folder.", err.Error(), "FOL0008")
 		return
@@ -131,14 +132,14 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 		// parentFolder.Children = newFolders
 
 		// Update file
-		_, err = folderDB.UpdateWithId(parentFolder)
+		_, err = globals.FolderDB.UpdateWithId(parentFolder)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FOL0009")
 			return
 		}
 
 		// Update Ancestore's Meta
-		err = folderDB.UpdateMetaAncestors(ancestors, claims.Subject)
+		err = globals.FolderDB.UpdateMetaAncestors(ancestors, claims.Subject)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "FOL0010")
 			return
@@ -178,7 +179,7 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r) // Gets params
 
 	// Retrieve folder from DB
-	object, err := folderDB.GetOneByID(params["id"])
+	object, err := globals.FolderDB.GetOneByID(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Folder don't exist.", err.Error(), "FOL0012")
 		return
@@ -188,7 +189,7 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	bson.Unmarshal(bsonBytes, &folder)
 
 	// Delete folder from DB
-	err = folderDB.DeleteOneByID(params["id"])
+	err = globals.FolderDB.DeleteOneByID(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete folder.", err.Error(), "FOL0013")
 		return
@@ -196,7 +197,7 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Update Parent Folder
 	// Get the Parent folder
-	object, err = folderDB.GetOneByID(folder.Parent)
+	object, err = globals.FolderDB.GetOneByID(folder.Parent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find parent folder.", err.Error(), "FOL0014")
 		return
@@ -210,20 +211,20 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 	object.Folders = newFolders
 
 	// Update Parent
-	_, err = folderDB.UpdateWithId(object)
+	_, err = globals.FolderDB.UpdateWithId(object)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating folder.", err.Error(), "FOL0015")
 		return
 	}
 
 	// Update Ancestore's Meta
-	err = folderDB.UpdateMetaAncestors(folder.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(folder.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating ancestore's meta.", err.Error(), "FOL0016")
 		return
 	}
 
-	err = folderDB.UpdateAncestorSize(folder.Ancestors, folder.Size, false)
+	err = globals.FolderDB.UpdateAncestorSize(folder.Ancestors, folder.Size, false)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not update parent folder.", err.Error(), "FIL0037")
 		return
@@ -231,14 +232,14 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Delete Nested Items
 	// Delete Folders
-	err = folderDB.DeleteManyWithAncestore(params["id"])
+	err = globals.FolderDB.DeleteManyWithAncestore(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting nested folders.", err.Error(), "FOL0017")
 		return
 	}
 
 	// Delete Files
-	fileCursor, err := fileDB.GetCursorByAncestors(params["id"])
+	fileCursor, err := globals.FileDB.GetCursorByAncestors(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error when deleting nested files.", err.Error(), "FOL0018")
 		return
@@ -255,13 +256,13 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 		// Delete File Document
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &file)
-		if err = fileDB.DeleteOneByID(file.Id); err != nil {
+		if err = globals.FileDB.DeleteOneByID(file.Id); err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FOL0020")
 			return
 		}
 
 		// Delete Part Documents
-		partCursor, err := partsDB.GetCursorByFileID(file.Id)
+		partCursor, err := globals.PartsDB.GetCursorByFileID(file.Id)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error when deleting nested files.", err.Error(), "FOL0036")
 			return
@@ -281,14 +282,14 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 			// Delete Parts from storage
 			bsonBytes2, _ := bson.Marshal(result2)
 			bson.Unmarshal(bsonBytes2, &part)
-			if err = storage.DeleteFile(part.Id, groupId); err != nil {
+			if err = globals.Storage.DeleteFile(part.Id, groupId); err != nil {
 				utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FOL0022")
 				return
 			}
 		}
 
 		// Delete parts from collection
-		err = partsDB.DeleteManyWithFile(file.Id)
+		err = globals.PartsDB.DeleteManyWithFile(file.Id)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete file parts.", err.Error(), "BUC0009")
 			return
@@ -320,7 +321,7 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// Get folder by folder ID
-	folder, err = folderDB.GetOneByID(folderID)
+	folder, err = globals.FolderDB.GetOneByID(folderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
 		return
@@ -373,7 +374,7 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Check if title already exists
 	// First get current title
-	currentDoc, err := folderDB.GetOneByID(updateFolder.Id)
+	currentDoc, err := globals.FolderDB.GetOneByID(updateFolder.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Folder trying to get updated doesn't exist.", err.Error(), "FOL0026")
 		return
@@ -381,7 +382,7 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 
 	if updateFolder.Meta.Title != currentDoc.Meta.Title {
 		// Check if title is illegal
-		foldersCursor, err := folderDB.GetCursorByParent(parentID)
+		foldersCursor, err := globals.FolderDB.GetCursorByParent(parentID)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FOL0027")
 			return
@@ -412,14 +413,14 @@ func UpdateFolder(w http.ResponseWriter, r *http.Request) {
 	updateFolder.Meta.Update.User = claims.Subject
 	updateFolder.Meta.Update.Date = time.Now()
 
-	folder, err = folderDB.UpdateWithId(updateFolder)
+	folder, err = globals.FolderDB.UpdateWithId(updateFolder)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder.", err.Error(), "FOL0030")
 		return
 	}
 
 	// Update ancestores meta
-	err = folderDB.UpdateMetaAncestors(folder.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(folder.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder's ancestores.", err.Error(), "FOL0031")
 		return
@@ -457,7 +458,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	retObject.Folders = []models.Folder{}
 
 	// Retrieve files from DB
-	fileCursor, err := fileDB.GetCursorByFolderID(folderID)
+	fileCursor, err := globals.FileDB.GetCursorByFolderID(folderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not get files in folder.", err.Error(), "FOL0032")
 		return
@@ -479,7 +480,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve folders from DB
-	folderCursor, err := folderDB.GetCursorByParent(folderID)
+	folderCursor, err := globals.FolderDB.GetCursorByParent(folderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not get children folders in folder.", err.Error(), "FOL0034")
 		return
@@ -504,7 +505,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(retObject)
 }
 
-func CopySubFile(fileID string, newDest string, bucketID string, nName string, user string) {
+func copySubFile(fileID string, newDest string, bucketID string, nName string, user string) {
 
 	cmBody := models.CopyMoveBody{
 
@@ -513,7 +514,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 		NewName:     nName,
 	}
 
-	file, err := fileDB.GetOneByID(cmBody.Id)
+	file, err := globals.FileDB.GetOneByID(cmBody.Id)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusBadRequest, "File doesn't exist.", err.Error(), "FIL0043")
 		return
@@ -526,14 +527,14 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 		newName = cmBody.NewName
 	}
 
-	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	newParent, err := globals.FolderDB.GetOneByID(cmBody.Destination)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FIL0044")
 		return
 	}
 
 	// Check if title is illegal
-	filesCursor, err := fileDB.GetCursorByFolderID(cmBody.Destination)
+	filesCursor, err := globals.FileDB.GetCursorByFolderID(cmBody.Destination)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0045")
 		return
@@ -561,7 +562,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating file's ID.", err.Error(), "FIL0048")
 		return
 	}
-	partsCursor, err := partsDB.GetCursorByFileID(cmBody.Id)
+	partsCursor, err := globals.PartsDB.GetCursorByFileID(cmBody.Id)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving parts.", err.Error(), "FIL0017")
 		return
@@ -584,7 +585,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 			return
 		}
 
-		err = storage.CopyFile(part.Id, newPartID, bucketID)
+		err = globals.Storage.CopyFile(part.Id, newPartID, bucketID)
 		if err != nil {
 			//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0050")
 			return
@@ -592,7 +593,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 
 		part.Id = newPartID
 		part.FileID = newFileId
-		err = partsDB.InsertOne(part)
+		err = globals.PartsDB.InsertOne(part)
 		if err != nil {
 			//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0072")
 			return
@@ -614,7 +615,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 
 	ancestors := append(newParent.Ancestors, file.FolderID)
 	file.Ancestors = ancestors
-	err = fileDB.InsertOne(file)
+	err = globals.FileDB.InsertOne(file)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0049")
 		return
@@ -626,14 +627,14 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 	newParent.Meta.Update.User = updated.User
 	newParent.Meta.Update.Date = updated.Date
 
-	_, err = folderDB.UpdateWithId(newParent)
+	_, err = globals.FolderDB.UpdateWithId(newParent)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
 		return
 	}
 
 	// Update Ancestores Size
-	err = folderDB.UpdateAncestorSize(ancestors, file.Size, true)
+	err = globals.FolderDB.UpdateAncestorSize(ancestors, file.Size, true)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0074")
 		return
@@ -641,7 +642,7 @@ func CopySubFile(fileID string, newDest string, bucketID string, nName string, u
 
 }
 
-func CopySubFolder(folderID string, newDest string, bucketID string, nName string, user string) string {
+func copySubFolder(folderID string, newDest string, bucketID string, nName string, user string) string {
 
 	cmBody := models.CopyMoveBody{
 
@@ -650,7 +651,7 @@ func CopySubFolder(folderID string, newDest string, bucketID string, nName strin
 		NewName:     nName,
 	}
 
-	folder, err := folderDB.GetOneByID(cmBody.Id)
+	folder, err := globals.FolderDB.GetOneByID(cmBody.Id)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusBadRequest, "File doesn't exist.", err.Error(), "FIL0043")
 		return ""
@@ -671,7 +672,7 @@ func CopySubFolder(folderID string, newDest string, bucketID string, nName strin
 
 	//Get Children and Files lists
 	//Get Destination of New Folder
-	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	newParent, err := globals.FolderDB.GetOneByID(cmBody.Destination)
 	if err != nil {
 		//fmt.Errorf("Destination doesn't exist.: %v", err, "FOL0036")
 		return ""
@@ -700,7 +701,7 @@ func CopySubFolder(folderID string, newDest string, bucketID string, nName strin
 
 	ancestors := append(newParent.Ancestors, folder.Parent)
 	folder.Ancestors = ancestors
-	err = folderDB.InsertOne(folder)
+	err = globals.FolderDB.InsertOne(folder)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0049")
 		return ""
@@ -712,14 +713,14 @@ func CopySubFolder(folderID string, newDest string, bucketID string, nName strin
 	newParent.Meta.Update.User = updated.User
 	newParent.Meta.Update.Date = updated.Date
 
-	_, err = folderDB.UpdateWithId(newParent)
+	_, err = globals.FolderDB.UpdateWithId(newParent)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
 		return ""
 	}
 
 	// Update Ancestores Size
-	err = folderDB.UpdateAncestorSize(ancestors, folder.Size, true)
+	err = globals.FolderDB.UpdateAncestorSize(ancestors, folder.Size, true)
 	if err != nil {
 		//utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0074")
 		return ""
@@ -727,16 +728,30 @@ func CopySubFolder(folderID string, newDest string, bucketID string, nName strin
 
 	//COPY SUBFILES
 	for _, element := range subFiles {
-		CopySubFile(element, newFolderId, bucketID, "", user)
+		copySubFile(element, newFolderId, bucketID, "", user)
 	}
 	//COPY SUBFOLDERS
 	for _, element := range subFolders {
-		CopySubFolder(element, newFolderId, bucketID, "", user)
+		copySubFolder(element, newFolderId, bucketID, "", user)
 	}
 
 	return newFolderId
 }
 
+// CopyFolder handles the /folder/copy post request.
+// @Summary Copy a folder and all nested files/folders.
+// @Description Copy a folder with all nested items.
+// @Description This endpoint is also used to share a folder with another organization.
+// @Accept json
+// @Produce json
+// @Tags Folders
+// @Param body body models.CopyMoveBody true "Body with Copy details"
+// @Success 202 {object} models.FolderList "Accepted"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 409 {object} models.ErrorReport "Conflict"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Router /folder/copy [post]
+// @Security BearerAuth
 func CopyFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
@@ -755,7 +770,7 @@ func CopyFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Chech if title is legal
 
-	folderCursor, err := folderDB.GetCursorByParent(cmBody.Destination)
+	folderCursor, err := globals.FolderDB.GetCursorByParent(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0039")
 		return
@@ -766,7 +781,7 @@ func CopyFolder(w http.ResponseWriter, r *http.Request) {
 		var result bson.M
 		var inFile models.File
 		if err := folderCursor.Decode(&result); err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FOL0040")
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not resolve cursor.", err.Error(), "FOL0040")
 			return
 		}
 		bsonBytes, _ := bson.Marshal(result)
@@ -779,14 +794,14 @@ func CopyFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Call helper function to recursivelly copy target folder and all sub files and folders
 
-	var newFLID = CopySubFolder(cmBody.Id, cmBody.Destination, r.Header.Get("X-Group-Id"), cmBody.NewName, claims.Subject)
+	var newFLID = copySubFolder(cmBody.Id, cmBody.Destination, r.Header.Get("X-Group-Id"), cmBody.NewName, claims.Subject)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 
 	// Load copied folder to generate response
 
-	folder, err := folderDB.GetOneByID(newFLID)
+	folder, err := globals.FolderDB.GetOneByID(newFLID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not locate copied folder.", err.Error(), "FOL0042")
 		return
@@ -794,7 +809,7 @@ func CopyFolder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(folder) //response should be mongo obj or resp w/ error
 }
 
-func MoveFolder(w http.ResponseWriter, r *http.Request) {
+func moveFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Resolve Claims
 	_, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -812,7 +827,7 @@ func MoveFolder(w http.ResponseWriter, r *http.Request) {
 
 	// Chech if title is legal
 
-	folderCursor, err := folderDB.GetCursorByParent(cmBody.Destination)
+	folderCursor, err := globals.FolderDB.GetCursorByParent(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FOL0045")
 		return
@@ -835,14 +850,14 @@ func MoveFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Get folder document
-	folder, err := folderDB.GetOneByID(cmBody.Id)
+	folder, err := globals.FolderDB.GetOneByID(cmBody.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Folder doesn't exist.", err.Error(), "FOL0048")
 		return
 	}
 
 	//Get new parent folder
-	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	newParent, err := globals.FolderDB.GetOneByID(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FOL0049")
 		return

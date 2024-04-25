@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/isotiropoulos/storage-api/globals"
 	"github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
 	"github.com/minio/minio-go/v7"
@@ -94,7 +95,7 @@ func handleJSON(w http.ResponseWriter, r *http.Request) {
 	}
 	postFile.Id = fileID
 
-	folder, err := folderDB.GetOneByID(postFile.FolderID)
+	folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
 	if err != nil || folder.Id == "" {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0008")
 		return
@@ -123,21 +124,21 @@ func handleJSON(w http.ResponseWriter, r *http.Request) {
 	meta.Update = update
 	postFile.Meta = meta
 
-	err = fileDB.InsertOne(postFile)
+	err = globals.FileDB.InsertOne(postFile)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "FIL0009")
 		return
 	}
 
 	// Update parent folder
-	err = folderDB.UpdateFiles(postFile.Id, postFile.FolderID)
+	err = globals.FolderDB.UpdateFiles(postFile.Id, postFile.FolderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0010")
 		return
 	}
 
 	// Update ancestore's meta
-	err = folderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "FIL0069")
 		return
@@ -166,13 +167,13 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 	partNum := r.FormValue("part")
 
 	// Retrive Objects from DB
-	file, err := fileDB.GetOneByID(fileId)
+	file, err := globals.FileDB.GetOneByID(fileId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find file.", err.Error(), "FIL0013")
 		return
 	}
 
-	folder, err := folderDB.GetOneByID(file.FolderID)
+	folder, err := globals.FolderDB.GetOneByID(file.FolderID)
 	if err != nil || folder.Id == "" {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0064")
 		return
@@ -205,7 +206,7 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Upload part
-	uploadInfo, err := storage.PostPart(bucketID, partId, partReader, int64(size), minio.PutObjectOptions{})
+	uploadInfo, err := globals.Storage.PostPart(bucketID, partId, partReader, int64(size), minio.PutObjectOptions{})
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could post part of file.", err.Error(), "FIL0015")
 		return
@@ -214,21 +215,21 @@ func handleOCTET(w http.ResponseWriter, r *http.Request) {
 	filePart.UploadInfo = uploadInfo
 
 	// filePart.Part = objectPart
-	err = partsDB.InsertOne(filePart)
+	err = globals.PartsDB.InsertOne(filePart)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not insert part document.", err.Error(), "FIL0018")
 		return
 	}
 
 	// Update file size
-	_, err = fileDB.UpdateFileSize(file.Id, size)
+	_, err = globals.FileDB.UpdateFileSize(file.Id, size)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update file's size.", err.Error(), "FIL0006")
 		return
 	}
 
 	// Update Ancestore sizes
-	err = folderDB.UpdateAncestorSize(file.Ancestors, int64(size), true)
+	err = globals.FolderDB.UpdateAncestorSize(file.Ancestors, int64(size), true)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "FIL0011")
 		return
@@ -253,14 +254,14 @@ func GetFileInfo(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r) // Gets params
 	fileId := params["id"]
 	// Retrive Object from DB
-	file, err := fileDB.GetOneByID(fileId)
+	file, err := globals.FileDB.GetOneByID(fileId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find file.", err.Error(), "FIL0019")
 		return
 	}
 
 	// Calculate the number of parts and the optimal part size
-	totalPartsCount := int(math.Ceil(float64(file.Size) / float64(partSize)))
+	totalPartsCount := int(math.Ceil(float64(file.Size) / float64(globals.PartSize)))
 
 	w.Header().Set("parts", strconv.FormatInt(int64(totalPartsCount), 10))
 	json.NewEncoder(w).Encode(file)
@@ -293,20 +294,20 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve file from DB
-	refFile, err := fileDB.GetOneByID(fileId)
+	refFile, err := globals.FileDB.GetOneByID(fileId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Error in retrieving file's information.", err.Error(), "FIL0021")
 		return
 	}
 
-	getPart, err := partsDB.GetOneByFileAndPart(refFile.Id, partNum)
+	getPart, err := globals.PartsDB.GetOneByFileAndPart(refFile.Id, partNum)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Error in retrieving file's part information.", err.Error(), "FIL0028")
 		return
 	}
 
 	// Read file part
-	reader, _, _, err := storage.GetFile(getPart.Id, groupId, minio.GetObjectOptions{})
+	reader, _, _, err := globals.Storage.GetFile(getPart.Id, groupId, minio.GetObjectOptions{})
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not get file part.", err.Error(), "FIL0022")
 		return
@@ -360,14 +361,14 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r) // Gets params
 
 	// Retrive Object from DB
-	file, err := fileDB.GetOneByID(params["id"])
+	file, err := globals.FileDB.GetOneByID(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find file.", err.Error(), "FIL0026")
 		return
 	}
 
 	// Delete Object from DB
-	err = fileDB.DeleteOneByID(params["id"])
+	err = globals.FileDB.DeleteOneByID(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete file.", err.Error(), "FIL0027")
 		return
@@ -375,7 +376,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	// Update folder containing the file
 	// Get the Parent folder
-	parentFolder, err = folderDB.GetOneByID(file.FolderID)
+	parentFolder, err = globals.FolderDB.GetOneByID(file.FolderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not find parent folder.", err.Error(), "FIL0029")
 		return
@@ -389,20 +390,20 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 	// Pass new values
 
 	// Update Parent
-	_, err = folderDB.UpdateWithId(parentFolder)
+	_, err = globals.FolderDB.UpdateWithId(parentFolder)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not update parent folder.", err.Error(), "FIL0030")
 		return
 	}
 
 	// Update Uncestores
-	err = folderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not update parent folder.", err.Error(), "FIL0071")
 		return
 	}
 
-	err = folderDB.UpdateAncestorSize(file.Ancestors, file.Size, false)
+	err = globals.FolderDB.UpdateAncestorSize(file.Ancestors, file.Size, false)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "Could not update parent folder.", err.Error(), "FIL0031")
 		return
@@ -410,7 +411,7 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	// Remove Object from MINIO
 	groupId := r.Header.Get("X-Group-Id")
-	partsCursor, err := partsDB.GetCursorByFileID(file.Id)
+	partsCursor, err := globals.PartsDB.GetCursorByFileID(file.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving parts.", err.Error(), "FIL0070")
 		return
@@ -426,13 +427,13 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		}
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &part)
-		if err = storage.DeleteFile(part.Id, groupId); err != nil {
+		if err = globals.Storage.DeleteFile(part.Id, groupId); err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in deleting file.", err.Error(), "FIL0032")
 			return
 		}
 	}
 
-	err = partsDB.DeleteManyWithFile(params["id"])
+	err = globals.PartsDB.DeleteManyWithFile(params["id"])
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete file parts.", err.Error(), "FIL0016")
 		return
@@ -484,7 +485,7 @@ func UpdateFile(w http.ResponseWriter, r *http.Request) {
 
 	// Check if title already exists
 	// First get current title
-	currentDoc, err := fileDB.GetOneByID(updateFile.Id)
+	currentDoc, err := globals.FileDB.GetOneByID(updateFile.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusNotFound, "File trying to get updated doesn't exist.", err.Error(), "FIL0035")
 		return
@@ -492,7 +493,7 @@ func UpdateFile(w http.ResponseWriter, r *http.Request) {
 
 	if updateFile.Meta.Title != currentDoc.Meta.Title {
 		// Check if title is illegal
-		filesCursor, err := fileDB.GetCursorByFolderID(parentID)
+		filesCursor, err := globals.FileDB.GetCursorByFolderID(parentID)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0036")
 			return
@@ -523,14 +524,14 @@ func UpdateFile(w http.ResponseWriter, r *http.Request) {
 	updateFile.Meta.Update.Date = time.Now()
 	updateFile.Meta.Update.User = claims.Subject
 
-	file, err = fileDB.UpdateWithId(updateFile)
+	file, err = globals.FileDB.UpdateWithId(updateFile)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder.", err.Error(), "FIL0039")
 		return
 	}
 
 	// Update ancestores meta
-	err = folderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusConflict, "Could not update folder's ancestores.", err.Error(), "FIL0040")
 		return
@@ -557,7 +558,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := fileDB.GetOneByID(cmBody.Id)
+	file, err := globals.FileDB.GetOneByID(cmBody.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "File doesn't exist.", err.Error(), "FIL0043")
 		return
@@ -570,14 +571,14 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 		newName = cmBody.NewName
 	}
 
-	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	newParent, err := globals.FolderDB.GetOneByID(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FIL0044")
 		return
 	}
 
 	// Check if title is illegal
-	filesCursor, err := fileDB.GetCursorByFolderID(cmBody.Destination)
+	filesCursor, err := globals.FileDB.GetCursorByFolderID(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0045")
 		return
@@ -605,7 +606,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in generating file's ID.", err.Error(), "FIL0048")
 		return
 	}
-	partsCursor, err := partsDB.GetCursorByFileID(cmBody.Id)
+	partsCursor, err := globals.PartsDB.GetCursorByFileID(cmBody.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving parts.", err.Error(), "FIL0017")
 		return
@@ -628,7 +629,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = storage.CopyFile(part.Id, newPartID, bucketID)
+		err = globals.Storage.CopyFile(part.Id, newPartID, bucketID)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0050")
 			return
@@ -636,7 +637,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 
 		part.Id = newPartID
 		part.FileID = newFileId
-		err = partsDB.InsertOne(part)
+		err = globals.PartsDB.InsertOne(part)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0072")
 			return
@@ -658,7 +659,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 
 	ancestors := append(newParent.Ancestors, file.FolderID)
 	file.Ancestors = ancestors
-	err = fileDB.InsertOne(file)
+	err = globals.FileDB.InsertOne(file)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0049")
 		return
@@ -670,14 +671,14 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 	newParent.Meta.Update.User = updated.User
 	newParent.Meta.Update.Date = updated.Date
 
-	_, err = folderDB.UpdateWithId(newParent)
+	_, err = globals.FolderDB.UpdateWithId(newParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0051")
 		return
 	}
 
 	// Update Ancestores Size
-	err = folderDB.UpdateAncestorSize(ancestors, file.Size, true)
+	err = globals.FolderDB.UpdateAncestorSize(ancestors, file.Size, true)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0074")
 		return
@@ -708,21 +709,21 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get file document
-	file, err := fileDB.GetOneByID(cmBody.Id)
+	file, err := globals.FileDB.GetOneByID(cmBody.Id)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Folder doesn't exist.", err.Error(), "FIL0054")
 		return
 	}
 
 	// Get new folder document
-	newParent, err := folderDB.GetOneByID(cmBody.Destination)
+	newParent, err := globals.FolderDB.GetOneByID(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "FIL0055")
 		return
 	}
 
 	// Get old folder document
-	oldParent, err := folderDB.GetOneByID(file.FolderID)
+	oldParent, err := globals.FolderDB.GetOneByID(file.FolderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Parent folder doesn't exist.", err.Error(), "FIL0059")
 		return
@@ -736,7 +737,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 		newName = cmBody.NewName
 	}
 
-	filesCursor, err := fileDB.GetCursorByFolderID(cmBody.Destination)
+	filesCursor, err := globals.FileDB.GetCursorByFolderID(cmBody.Destination)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0056")
 		return
@@ -765,14 +766,14 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	oldParent.Files = newFiles
 
 	// Update old Parent
-	oldParent, err = folderDB.UpdateWithId(oldParent)
+	oldParent, err = globals.FolderDB.UpdateWithId(oldParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating old parent folder.", err.Error(), "FIL0060")
 		return
 	}
 
 	// Update OLD Parent Ancestore's Meta
-	err = folderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(file.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating ancestore's meta.", err.Error(), "FIL0061")
 		return
@@ -791,7 +792,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	file.Meta.Title = newName
 	ancestors := append(newParent.Ancestors, file.FolderID)
 	file.Ancestors = ancestors
-	updatedFile, err := fileDB.UpdateWithId(file)
+	updatedFile, err := globals.FileDB.UpdateWithId(file)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not file folder.", err.Error(), "FIL0062")
 		return
@@ -802,7 +803,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	// newParent.Meta.Update = append(newParent.Meta.Update, updated)
 	newParent.Meta.Update.User = updated.User
 	newParent.Meta.Update.Date = updated.Date
-	_, err = folderDB.UpdateWithId(newParent)
+	_, err = globals.FolderDB.UpdateWithId(newParent)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "FIL0063")
 		return
@@ -845,7 +846,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 
 	// Update NEW Parent Ancestore's Size
 	if len(newUpdatable) > 0 {
-		err = folderDB.UpdateAncestorSize(newUpdatable, file.Size, true)
+		err = globals.FolderDB.UpdateAncestorSize(newUpdatable, file.Size, true)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating ancestore's size.", err.Error(), "FIL0066")
 			return
@@ -855,7 +856,7 @@ func MoveFile(w http.ResponseWriter, r *http.Request) {
 	// Update OLD Parent Ancestore's Size
 
 	if len(newUpdatable) > 0 {
-		err = folderDB.UpdateAncestorSize(oldAncestores, file.Size, false)
+		err = globals.FolderDB.UpdateAncestorSize(oldAncestores, file.Size, false)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in updating ancestore's size.", err.Error(), "FIL0067")
 			return

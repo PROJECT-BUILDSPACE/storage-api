@@ -9,6 +9,7 @@ import (
 	// "strings"
 
 	"github.com/gorilla/mux"
+	"github.com/isotiropoulos/storage-api/globals"
 	models "github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
 	// "BUILDSPACE-api/utils"
@@ -43,14 +44,14 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Make Bucket
-	info, err := storage.MakeBucket(req)
+	info, err := globals.Storage.MakeBucket(req)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not create bucket.", err.Error(), "BUC0002")
 		return
 	}
 
 	// Check if bucket folder exists
-	_, err = folderDB.GetOneByID(req.Id)
+	_, err = globals.FolderDB.GetOneByID(req.Id)
 	// if error then folder id doesn't exist!!
 	if err != nil {
 		// Make bucket's main folder
@@ -62,7 +63,7 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 
 		postFolder := utils.CreateFolder(folderData, req.Id, []string{}, req.Id)
 
-		err = folderDB.InsertOne(postFolder)
+		err = globals.FolderDB.InsertOne(postFolder)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusBadRequest, "Could not create bucket.", err.Error(), "BUC0003")
 			return
@@ -93,35 +94,35 @@ func DeleteBucket(w http.ResponseWriter, r *http.Request) {
 	bucketId := params["id"]
 
 	// Delete Bucket
-	err := storage.DeleteBucket(bucketId)
+	err := globals.Storage.DeleteBucket(bucketId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket.", err.Error(), "BUC0004")
 		return
 	}
 
 	// Delete nested folders
-	err = folderDB.DeleteManyWithAncestore(bucketId)
+	err = globals.FolderDB.DeleteManyWithAncestore(bucketId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's root folder.", err.Error(), "BUC0005")
 		return
 	}
 
 	// Delete root folder
-	err = folderDB.DeleteOneByID(bucketId)
+	err = globals.FolderDB.DeleteOneByID(bucketId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's root folder.", err.Error(), "BUC0008")
 		return
 	}
 
 	// Delete parts
-	err = partsDB.DeleteManyWithBucket(bucketId)
+	err = globals.PartsDB.DeleteManyWithBucket(bucketId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's parts.", err.Error(), "BUC0006")
 		return
 	}
 
 	// Delete files
-	err = fileDB.DeleteManyWithAncestore(bucketId)
+	err = globals.FileDB.DeleteManyWithAncestore(bucketId)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete bucket's files.", err.Error(), "BUC0007")
 		return

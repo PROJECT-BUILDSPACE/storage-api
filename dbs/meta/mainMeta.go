@@ -40,6 +40,9 @@ type IFileStore interface {
 
 	// Add to the file size the parts size
 	UpdateFileSize(fileID string, size int) (objUpdated models.File, err error)
+
+	// Return Copernicus file by Fingerprint
+	GetOneByFingerprint(fingerprint string) (models.File, error)
 }
 
 // IFolderStore is a Database Interface for the Folders

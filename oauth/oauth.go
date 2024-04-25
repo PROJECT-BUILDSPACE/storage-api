@@ -59,9 +59,13 @@ func Init() {
 func GetClaims(token string) (claims models.OidcClaims, err error) {
 	resultCl := models.OidcClaims{}
 	tokenVer, err := Verifier.Verify(context.Background(), token)
-	erro := tokenVer.Claims(&resultCl)
-	if erro != nil {
-		log.Println("failed to parse Claims: ", erro.Error())
+	if err != nil {
+		log.Println("failed to parse Claims: ", err.Error())
+		return resultCl, err
+	}
+	err = tokenVer.Claims(&resultCl)
+	if err != nil {
+		log.Println("failed to parse Claims: ", err.Error())
 	}
 	return resultCl, err
 }

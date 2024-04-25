@@ -1,5 +1,7 @@
 package main
 
+// swag init --> For Swagger docs
+
 import (
 	"encoding/json"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	db "github.com/isotiropoulos/storage-api/dbs/meta"
 	objectstorage "github.com/isotiropoulos/storage-api/dbs/objectStorage"
 	_ "github.com/isotiropoulos/storage-api/docs"
+	"github.com/isotiropoulos/storage-api/globals"
 	handle "github.com/isotiropoulos/storage-api/handlers"
 	"github.com/isotiropoulos/storage-api/middleware"
 	auth "github.com/isotiropoulos/storage-api/oauth"
@@ -68,7 +71,7 @@ func main() {
 	objectstorage.Init()
 	db.NewDB()
 	auth.Init()
-	handle.Init()
+	globals.Init()
 	r := mux.NewRouter()
 	r.Methods("OPTIONS").HandlerFunc(optionsHandler)
 

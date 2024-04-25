@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/isotiropoulos/storage-api/globals"
 	"github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
 	"github.com/minio/minio-go/v7"
@@ -31,6 +32,7 @@ import (
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
 // @Router /copernicus/{service}/getall [get]
+// @Security BearerAuth
 func GetList(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
@@ -94,6 +96,7 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
 // @Router /copernicus/{service}/getform/{id} [get]
+// @Security BearerAuth
 func GetForm(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
@@ -155,17 +158,19 @@ func GetForm(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param service path string true "Service (currently available 'ads' and 'cds')"
 // @Param body body models.CopernicusInput  true "Request body"
-// @Success 200 {object} models.CopernicusResponse "OK"
+// @Success 200 {object} models.File "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
 // @Router /copernicus/{service}/dataset [post]
+// @Security BearerAuth
 func PostDataset(w http.ResponseWriter, r *http.Request) {
 
-	// forms a request for a single dataset CLIMATE
+	// forms a request for a single dataset
 	// save any VALID requests to database as a file
 	// + faulty requests handling
 	// also task id is saved
+	var postFile models.File
 
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -177,6 +182,21 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve request.", err.Error(), "COP0005")
+		return
+	}
+
+	// Check if already downloaded
+	fprint, err := utils.GenerateRequestFingerprint(reqBody)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating file's fingerprint.", err.Error(), "COP0011")
+		return
+	}
+
+	postFile, err = globals.FileDB.GetOneByFingerprint(fprint)
+	if err == nil && postFile.Id != "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(postFile)
 		return
 	}
 
@@ -215,11 +235,11 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("Content-Type", "application/json")
 
 	if service == "cds" {
-		req.SetBasicAuth(CDS_UID, CDS_KEY)
+		req.SetBasicAuth(globals.CDS_UID, globals.CDS_KEY)
 	}
 
 	if service == "ads" {
-		req.SetBasicAuth(ADS_UID, ADS_KEY)
+		req.SetBasicAuth(globals.ADS_UID, globals.ADS_KEY)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -233,13 +253,12 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could Read Copernicus Response", err.Error(), "COP0009")
 	}
 
-	var b models.CopernicusResponse
+	var b models.CopernicusTask
 	json.Unmarshal(body, &b)
 
-	var postFile models.File
-	postFile.FolderID = COPERNICUS_BUCKET_ID
+	postFile.FolderID = globals.COPERNICUS_BUCKET_ID
 	//get bucket
-	folder, err := folderDB.GetOneByID(postFile.FolderID)
+	folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
 	if err != nil || folder.Id == "" {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "COP0010")
 		return
@@ -263,37 +282,48 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	postFile.Size = 0
 	postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
 
+	copDetails := models.CopernicusDetails{
+		TaskID:      b.RequestID,
+		Fingerprint: fprint,
+		Status:      b.State,
+		Service:     service,
+		Error:       models.CopernicusTaskError{},
+	}
+
 	meta := postFile.Meta
 	meta.DateCreation = time.Now()
 	meta.Creator = claims.Subject
 	meta.Read = folder.Meta.Read
 	meta.Write = folder.Meta.Write
 	meta.Update = update
-	meta.CopTasks = b.RequestID
+	meta.Title = title
+	postFile.CopernicusDetails = copDetails
 	postFile.Meta = meta
-	err = fileDB.InsertOne(postFile)
+	err = globals.FileDB.InsertOne(postFile)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating stream.", err.Error(), "COP0012")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in insterting file.", err.Error(), "COP0012")
 		return
 	}
 
 	// Update parent folder
-	err = folderDB.UpdateFiles(postFile.Id, postFile.FolderID)
+	err = globals.FolderDB.UpdateFiles(postFile.Id, postFile.FolderID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update parent folder.", err.Error(), "COP0013")
 		return
 	}
 
 	// Update ancestore's meta
-	err = folderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
+	err = globals.FolderDB.UpdateMetaAncestors(postFile.Ancestors, claims.Subject)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "COP0014")
 		return
 	}
 
+	go utils.CheckCopernicusStatus(postFile, claims.Subject)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(b)
+	json.NewEncoder(w).Encode(postFile)
 }
 
 // GetStatus handles the /copernicus/{service}/dataset/{id} GET request.
@@ -309,6 +339,7 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
 // @Router /copernicus/{service}/dataset/{id} [get]
+// @Security BearerAuth
 func GetStatus(w http.ResponseWriter, r *http.Request) {
 	// using task id of a request first checks if task in completed then proceeds to dowload data to db if so
 	//get claims
@@ -322,6 +353,8 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 	taskID := params["id"]
 	service := params["service"]
 	base := ""
+	uid := ""
+	key := ""
 
 	if service != "cds" && service != "ads" {
 		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", err.Error(), "COP0016")
@@ -330,28 +363,24 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 
 	if service == "cds" {
 		base = "https://cds.climate.copernicus.eu/api/v2/tasks/"
+		uid = globals.CDS_UID
+		key = globals.CDS_KEY
 	}
 
 	if service == "ads" {
 		base = "https://ads.atmosphere.copernicus.eu/api/v2/tasks/"
+		uid = globals.ADS_UID
+		key = globals.ADS_KEY
 	}
-	req, err := http.Get(base + string(taskID))
 
+	req, err := http.Get(base + string(taskID))
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Destination doesn't exist.", err.Error(), "COP0017")
 		return
 	}
 
-	//basic auth should be refactored into consts
 	req.Header.Set("Content-Type", "application/json")
-
-	if service == "cds" {
-		req.Request.SetBasicAuth(CDS_UID, CDS_KEY)
-	}
-
-	if service == "ads" {
-		req.Request.SetBasicAuth(ADS_UID, ADS_KEY)
-	}
+	req.Request.SetBasicAuth(uid, key)
 
 	resp, err := http.DefaultClient.Do(req.Request)
 	if err != nil {
@@ -365,7 +394,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusBadRequest, "Error in Copernicus Response", err.Error(), "COP0019")
 	}
 
-	var b models.CopernicusResponse
+	var b models.CopernicusTask
 
 	json.Unmarshal(body, &b)
 
@@ -382,14 +411,14 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		var postFile models.File
 
 		//get relevant file from db
-		postFile, err = fileDB.GetOneByTaskID(taskID)
+		postFile, err = globals.FileDB.GetOneByTaskID(taskID)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving file from database.", err.Error(), "COP0020")
 			return
 		}
 		// Set bucket ID; this is the "copernicus bucket" where all the cop data is saved
 
-		postFile.FolderID = COPERNICUS_BUCKET_ID
+		postFile.FolderID = globals.COPERNICUS_BUCKET_ID
 
 		downreq, err := http.Get(b.Location)
 		if err != nil {
@@ -412,10 +441,10 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Calculate the number of parts and the optimal part size
-		totalPartsCount := int(math.Ceil(float64(downloadSize) / float64(partSize)))
+		totalPartsCount := int(math.Ceil(float64(downloadSize) / float64(globals.PartSize)))
 
 		//reach copernicus bucket in db
-		folder, err := folderDB.GetOneByID(postFile.FolderID)
+		folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
 		if err != nil || folder.Id == "" {
 			utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "COP0024")
 			return
@@ -433,7 +462,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		postFile.Meta = meta
 
 		//update file
-		_, err = fileDB.UpdateWithId(postFile)
+		_, err = globals.FileDB.UpdateWithId(postFile)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusBadRequest, "Could update file entry.", err.Error(), "COP0025")
 		}
@@ -447,7 +476,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		for i := int(1); i <= totalPartsCount; i++ {
 
 			// Read part data into a buffer
-			partBuffer := make([]byte, partSize)
+			partBuffer := make([]byte, globals.PartSize)
 			n, err := io.ReadFull(downresp.Body, partBuffer)
 			//check if error is not end of stream
 			if err != nil && !(errors.Is(err, io.ErrUnexpectedEOF)) {
@@ -481,7 +510,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 				filePart.Size = int64(size)
 				filePart.PartNumber = item
 				// Upload part
-				uploadInfo, err := storage.PostPart(COPERNICUS_BUCKET_ID, partId, partReader, int64(size), minio.PutObjectOptions{})
+				uploadInfo, err := globals.Storage.PostPart(globals.COPERNICUS_BUCKET_ID, partId, partReader, int64(size), minio.PutObjectOptions{})
 				if err != nil {
 					utils.RespondWithError(w, http.StatusBadRequest, "Could post part of file.", err.Error(), "COP0027")
 					return
@@ -490,7 +519,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 				filePart.UploadInfo = uploadInfo
 
 				// insert part to db
-				err = partsDB.InsertOne(filePart)
+				err = globals.PartsDB.InsertOne(filePart)
 				if err != nil {
 					utils.RespondWithError(w, http.StatusBadRequest, "Could not insert part document.", err.Error(), "COP0028")
 					return
@@ -509,14 +538,14 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		//Update file size
-		_, err = fileDB.UpdateFileSize(postFile.Id, downloadSize)
+		_, err = globals.FileDB.UpdateFileSize(postFile.Id, downloadSize)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update file's size.", err.Error(), "COP0029")
 			return
 		}
 
 		// Update Ancestor sizes
-		err = folderDB.UpdateAncestorSize(postFile.Ancestors, int64(downloadSize), true)
+		err = globals.FolderDB.UpdateAncestorSize(postFile.Ancestors, int64(downloadSize), true)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "COP0030")
 			return

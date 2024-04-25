@@ -30,6 +30,26 @@ definitions:
       range:
         $ref: '#/definitions/models.CoordRange'
     type: object
+  models.CopernicusDetails:
+    properties:
+      error:
+        allOf:
+        - $ref: '#/definitions/models.CopernicusTaskError'
+        description: Error details in case of status failed
+      fingerprint:
+        description: Fingerprint of the dataset (used to identify datasets based on
+          request parameters)
+        type: string
+      sercice:
+        description: Dataset's related service
+        type: string
+      status:
+        description: Copernicus task status
+        type: string
+      task_id:
+        description: Copernicus Task
+        type: string
+    type: object
   models.CopernicusInput:
     properties:
       body:
@@ -40,15 +60,37 @@ definitions:
         description: Name of specific Copernicus API
         type: string
     type: object
-  models.CopernicusResponse:
+  models.CopernicusTaskError:
     properties:
-      location:
-        description: Download link
+      context:
+        description: An arbitrary JSON object containing additional information for
+          debugging
+      message:
+        description: Message to the user
         type: string
-      request_id:
+      permanent:
+        description: If this is true then the request should not be retried unchanged
+        type: boolean
+      reason:
+        description: Reason of Failure
         type: string
-      state:
-        description: State of files to be downloaded
+      url:
+        description: A URI which is unique to a particular class of error
+        type: string
+      who:
+        description: Is this a problem in the server or the request (server or client)?
+        type: string
+    type: object
+  models.CopyMoveBody:
+    properties:
+      _id:
+        description: ID of object (file or folder)
+        type: string
+      destination:
+        description: ID of destination
+        type: string
+      new_name:
+        description: ID of destination
         type: string
     type: object
   models.Details:
@@ -154,6 +196,10 @@ definitions:
         items:
           type: string
         type: array
+      copernicus_details:
+        allOf:
+        - $ref: '#/definitions/models.CopernicusDetails'
+        description: Details related to Copernicus datasets
       file_type:
         description: The file's extention
         type: string
@@ -238,8 +284,6 @@ definitions:
     type: object
   models.Meta:
     properties:
-      coptasks:
-        type: string
       creator:
         description: User's ID that created the file
         type: string
@@ -403,7 +447,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.CopernicusResponse'
+            $ref: '#/definitions/models.File'
         "400":
           description: Bad Request
           schema:
@@ -416,6 +460,8 @@ paths:
           description: Service Anavailable
           schema:
             $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
       summary: Post a request for a specific dataset (create a Copernicus task that
         will make a dataset available for download).
       tags:
@@ -455,6 +501,8 @@ paths:
           description: Service Anavailable
           schema:
             $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
       summary: Download dataset (if the Copernicus task is completed).
       tags:
       - Copernicus
@@ -488,6 +536,8 @@ paths:
           description: Service Anavailable
           schema:
             $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
       summary: Get a list of all available datasets related to a specific service.
       tags:
       - Copernicus
@@ -526,6 +576,8 @@ paths:
           description: Service Anavailable
           schema:
             $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
       summary: Get the form of a dataset that is related to a specific service.
       tags:
       - Copernicus
@@ -837,6 +889,44 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete folder by id.
+      tags:
+      - Folders
+  /folder/copy:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Copy a folder with all nested items.
+        This endpoint is also used to share a folder with another organization.
+      parameters:
+      - description: Body with Copy details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CopyMoveBody'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.FolderList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Copy a folder and all nested files/folders.
       tags:
       - Folders
   /folder/list:

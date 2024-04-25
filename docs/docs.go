@@ -127,6 +127,11 @@ const docTemplate = `{
         },
         "/copernicus/{service}/dataset": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "The request can be specified by the body of the request using the parameters of the dataset.\nPlease note that some parameters cannot be used with other. For the dataset parameters' rules consider the dataset's form.",
                 "consumes": [
                     "application/json"
@@ -160,7 +165,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.CopernicusResponse"
+                            "$ref": "#/definitions/models.File"
                         }
                     },
                     "400": {
@@ -186,6 +191,11 @@ const docTemplate = `{
         },
         "/copernicus/{service}/dataset/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "This endpoint checks the status of a Copernicus task and if it is completed it downloads the file and stores it in MinIO (under the Copernicus public bucket).\nIn case of uncompleted task, the response is a json specifying the current status.",
                 "produces": [
                     "application/json"
@@ -240,6 +250,11 @@ const docTemplate = `{
         },
         "/copernicus/{service}/getall": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "This is the endopoint to get a list of all available datasets of a service.\nCurrently supported services are \"ads\" and \"cds\"",
                 "produces": [
                     "application/json"
@@ -287,6 +302,11 @@ const docTemplate = `{
         },
         "/copernicus/{service}/getform/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "A form is a set of rules indicating which parameters are neccessary for the dataset to be retrieved.\nPlease note that some parameters cannot be used with other. The selection rules are also included in the forms.",
                 "produces": [
                     "application/json"
@@ -744,6 +764,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/folder/copy": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Copy a folder with all nested items.\nThis endpoint is also used to share a folder with another organization.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Folders"
+                ],
+                "summary": "Copy a folder and all nested files/folders.",
+                "parameters": [
+                    {
+                        "description": "Body with Copy details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CopyMoveBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.FolderList"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
         "/folder/list": {
             "get": {
                 "security": [
@@ -947,6 +1024,35 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CopernicusDetails": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "description": "Error details in case of status failed",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CopernicusTaskError"
+                        }
+                    ]
+                },
+                "fingerprint": {
+                    "description": "Fingerprint of the dataset (used to identify datasets based on request parameters)",
+                    "type": "string"
+                },
+                "sercice": {
+                    "description": "Dataset's related service",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Copernicus task status",
+                    "type": "string"
+                },
+                "task_id": {
+                    "description": "Copernicus Task",
+                    "type": "string"
+                }
+            }
+        },
         "models.CopernicusInput": {
             "type": "object",
             "properties": {
@@ -961,18 +1067,47 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CopernicusResponse": {
+        "models.CopernicusTaskError": {
             "type": "object",
             "properties": {
-                "location": {
-                    "description": "Download link",
+                "context": {
+                    "description": "An arbitrary JSON object containing additional information for debugging"
+                },
+                "message": {
+                    "description": "Message to the user",
                     "type": "string"
                 },
-                "request_id": {
+                "permanent": {
+                    "description": "If this is true then the request should not be retried unchanged",
+                    "type": "boolean"
+                },
+                "reason": {
+                    "description": "Reason of Failure",
                     "type": "string"
                 },
-                "state": {
-                    "description": "State of files to be downloaded",
+                "url": {
+                    "description": "A URI which is unique to a particular class of error",
+                    "type": "string"
+                },
+                "who": {
+                    "description": "Is this a problem in the server or the request (server or client)?",
+                    "type": "string"
+                }
+            }
+        },
+        "models.CopyMoveBody": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "description": "ID of object (file or folder)",
+                    "type": "string"
+                },
+                "destination": {
+                    "description": "ID of destination",
+                    "type": "string"
+                },
+                "new_name": {
+                    "description": "ID of destination",
                     "type": "string"
                 }
             }
@@ -1129,6 +1264,14 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "copernicus_details": {
+                    "description": "Details related to Copernicus datasets",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CopernicusDetails"
+                        }
+                    ]
+                },
                 "file_type": {
                     "description": "The file's extention",
                     "type": "string"
@@ -1255,9 +1398,6 @@ const docTemplate = `{
         "models.Meta": {
             "type": "object",
             "properties": {
-                "coptasks": {
-                    "type": "string"
-                },
                 "creator": {
                     "description": "User's ID that created the file",
                     "type": "string"
