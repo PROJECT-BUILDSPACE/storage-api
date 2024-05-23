@@ -39,7 +39,7 @@ type IFileStorage interface {
 	GetFile(fileID string, bucket string, opts minio.GetObjectOptions) (io.ReadCloser, minio.ObjectInfo, http.Header, error)
 
 	// // Copy an file with new name
-	CopyFile(originalName string, newName string, bucket string) error
+	CopyFile(originalName string, newName string, bucketFrom string, bucketTo string) error
 }
 
 // FileStorage ...
@@ -54,17 +54,17 @@ func Init() {
 
 	_minioURL := os.Getenv("MINIO_URL")
 	if _minioURL == "" {
-		_minioURL = "localhost:9000"
+		_minioURL = "minikube.local:30900"
 	}
 
 	_accessKeyID := os.Getenv("ACCESS_KEY")
 	if _accessKeyID == "" {
-		_accessKeyID = "SuWyc84Qy89jnmHV"
+		_accessKeyID = "FyDfKIsTNXg9iCNQw4da"
 	}
 
 	_secretAccessKey := os.Getenv("SECRET_ACCESS_KEY")
 	if _secretAccessKey == "" {
-		_secretAccessKey = "1vi29tFkQDhwvGndALxi8mQKAm5g2clV"
+		_secretAccessKey = "pyHGVj2LPjp0kFmtDns7tnZLPiRlqHtmsC874pPo"
 	}
 
 	// Initialize minio client file.
@@ -200,17 +200,17 @@ func (fileStorage *FileStorage) GetFile(fileID string, bucket string, opts minio
 }
 
 // CopyFile is to Copy a file with new name
-func (fileStorage *FileStorage) CopyFile(originalName string, newName string, bucket string) error {
+func (fileStorage *FileStorage) CopyFile(originalName string, newName string, bucketFrom string, bucketTo string) error {
 
 	// Source object
 	srcOpts := minio.CopySrcOptions{
-		Bucket: bucket,
+		Bucket: bucketFrom,
 		Object: originalName,
 	}
 
 	// Destination object
 	dstOpts := minio.CopyDestOptions{
-		Bucket: bucket,
+		Bucket: bucketTo,
 		Object: newName,
 	}
 

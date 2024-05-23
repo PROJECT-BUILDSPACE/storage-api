@@ -169,8 +169,24 @@ func readRequestBody(r *http.Request, v interface{}) error {
 func extractKeysAndValues(data interface{}) map[string]string {
 	result := make(map[string]string)
 
+	var middleInterface interface{}
+
+	// Convert the data interface to a string
+	dataStr, ok := data.(string)
+	if ok {
+		if json.Valid([]byte(dataStr)) {
+			// Unmarshal the JSON string into a map
+			err := json.Unmarshal([]byte(dataStr), &middleInterface)
+			if err != nil {
+				return result
+			}
+		}
+	} else {
+		middleInterface = data
+	}
+
 	// Use reflection to inspect the keys and values in the data
-	v := reflect.ValueOf(data)
+	v := reflect.ValueOf(middleInterface)
 	if v.Kind() == reflect.Map {
 		keys := v.MapKeys()
 		for _, key := range keys {

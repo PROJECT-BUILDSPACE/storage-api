@@ -505,7 +505,7 @@ func GetFolderItems(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(retObject)
 }
 
-func copySubFile(fileID string, newDest string, bucketID string, nName string, user string) {
+func copySubFile(fileID string, newDest string, bucketFrom string, bucketTo string, nName string, user string) {
 
 	cmBody := models.CopyMoveBody{
 
@@ -585,7 +585,7 @@ func copySubFile(fileID string, newDest string, bucketID string, nName string, u
 			return
 		}
 
-		err = globals.Storage.CopyFile(part.Id, newPartID, bucketID)
+		err = globals.Storage.CopyFile(part.Id, newPartID, bucketFrom, bucketTo)
 		if err != nil {
 			//utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0050")
 			return
@@ -728,7 +728,11 @@ func copySubFolder(folderID string, newDest string, bucketID string, nName strin
 
 	//COPY SUBFILES
 	for _, element := range subFiles {
-		copySubFile(element, newFolderId, bucketID, "", user)
+		if len(newParent.Ancestors) == 0 {
+			copySubFile(element, newFolderId, bucketID, newParent.Id, "", user)
+		} else {
+			copySubFile(element, newFolderId, bucketID, newParent.Ancestors[0], "", user)
+		}
 	}
 	//COPY SUBFOLDERS
 	for _, element := range subFolders {

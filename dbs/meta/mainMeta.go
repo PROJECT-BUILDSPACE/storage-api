@@ -127,7 +127,7 @@ func NewDB() {
 		database = "minio"
 	}
 	if mongoURL == "" {
-		mongoURL = "mongodb://localhost:27017"
+		mongoURL = "mongodb://minikube.local:30000"
 	}
 	log.Println("Starting at " + mongoURL)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

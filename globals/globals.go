@@ -8,7 +8,7 @@ import (
 	objectstorage "github.com/isotiropoulos/storage-api/dbs/objectStorage"
 )
 
-const PartSize = 5 * 1024 * 1024
+const PartSize = 1 * 1024 * 1024
 
 const CheckTime = 5 * time.Second
 

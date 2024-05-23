@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"math"
 	"path/filepath"
 	"time"
 
@@ -260,10 +259,7 @@ func GetFileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate the number of parts and the optimal part size
-	totalPartsCount := int(math.Ceil(float64(file.Size) / float64(globals.PartSize)))
-
-	w.Header().Set("parts", strconv.FormatInt(int64(totalPartsCount), 10))
+	w.Header().Set("parts", strconv.FormatInt(int64(file.Total), 10))
 	json.NewEncoder(w).Encode(file)
 }
 
@@ -629,7 +625,7 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = globals.Storage.CopyFile(part.Id, newPartID, bucketID)
+		err = globals.Storage.CopyFile(part.Id, newPartID, bucketID, newParent.Ancestors[0])
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not copy file.", err.Error(), "FIL0050")
 			return
