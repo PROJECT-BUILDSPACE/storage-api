@@ -27,22 +27,37 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 
 + 📁 **docs**: Docs package contains the Swagger documentation. Online version of the Swagger can also be found [here](https://api-buildspace.euinno.eu/swagger/index.html#/ "here").
 
-+ 📁 **dbs**: Contains the source code of the **metaDB** and **filestorage** packages. The metaDB package manages the meta information of the uploaded files, in cotrast to the filestorage that manages the upload/download/copy/etc. of files in the filesystem
-        └── 📁meta
++ 📁 **dbs**: Contains the source code of the **metaDB** and **filestorage** packages. The metaDB package manages the meta information of the uploaded files, in cotrast to the filestorage that manages the upload/download/copy/etc. of files in the filesyste
+  
+
+  	└── 📁meta
+  
             └── files.go
+  
             └── folders.go
+  
             └── mainMeta.go
+  
             └── parts.go
+  
         └── 📁objectStorage
+  
             └── objectStorage.go
+  
 
 + 📁 **handlers**: Contains the handlers package source code that includes the HTTP handler functions of the API
-└── ```buckets.go```: Handler functions for the **Bucket** namespace
-└── ```copernicus.go```: Handler functions for the **Copernicus** namespace
-└── ```folders.go```: Handler functions for the **Folder** namespace
-└── ```local_files.go```: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
-└── ```prod_files.go```: Handler functions for the **Files** namespace
+  
+```
+	└── buckets.go: Handler functions for the **Bucket** namespace
 
+	└── copernicus.go: Handler functions for the **Copernicus** namespace
+
+	└── folders.go: Handler functions for the **Folder** namespace
+
+	└── local_files.go: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
+
+	└── prod_files.go: Handler functions for the **Files** namespace
+```
 + 📁 **middleware**: Contains the middleware package source code used to identify user (by interpreting the JWT Bearer Token) before perfoming any request and extract useful information regarding the Organizations and permissions of the user.
 
 + 📁 **oauth**: Contains the oauth package source code used to connect the API with the OpenID Connect Provider.
@@ -56,16 +71,14 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 ### Namespace Breakdown
 In this section we will describe the API Namespaces and their endpoints in details. We will also provide example requests using ```curl```.
 
-**Note: ** For all requests users must provide a JWT Bearer token from the OIDC Provider (same provider as the one in the oauth package).
+**Note:** For all requests users must provide a JWT Bearer token from the OIDC Provider (same provider as the one in the oauth package).
 
-####Buckets
+#### Buckets
 ---
 This namespace contains two endpoints one for creating and on for deleting buckets in the S3-compatible file system.
 
-<div style="background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 10px; margin: 10px 0; display: inline-flex; align-items: center;">
-  <strong style="margin-right: 10px;">POST</strong> /bucket
-</div>
-
+<strong style="background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 10px; margin: 10px 0; display: inline-flex; align-items: center; margin-right: 10px;">POST</strong> /bucket
+   
 ```curl
 curl --location 'https://api-buildspace.euinno.eu/bucket' \
 --header 'Content-Type: application/json' \
