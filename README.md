@@ -67,7 +67,7 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 ### Namespace Breakdown
 In this section we will describe the API Namespaces and their endpoints in details. We will also provide example requests using ```curl```.
 
-**Note: ** For all requests users must provide a JWT Bearer token from the OIDC Provider (same provider as the one in the oauth package).
+**Note:** For all requests users must provide a JWT Bearer token from the OIDC Provider (same provider as the one in the oauth package).
 
 ####Buckets
 ---
@@ -75,19 +75,31 @@ This namespace contains two endpoints one for creating and on for deleting bucke
 <svg fill="none" viewBox="0 0 600 300" width="600" height="300" xmlns="http://www.w3.org/2000/svg">
   <foreignObject width="100%" height="100%">
   <div xmlns="http://www.w3.org/1999/xhtml">
+	  
       <style>
+      
         .container {
-	  background-color: #e8f5e9; 
-	  border-left: 5px solid #4caf50; 
-	  padding: 10px; margin: 10px 0; 
-	  display: inline-flex; 
-	  align-items: center;
-        }
+	
+   		background-color: #e8f5e9; 
+	  
+   		border-left: 5px solid #4caf50; 
+	  
+   		padding: 10px; margin: 10px 0; 
+	  
+   		display: inline-flex; 
+	  	
+		align-items: center;
+        
+	}
+      
       </style>
 
      <div class="container">
+     
 	  <strong style="margin-right: 10px;">POST</strong> /bucket
+   
      </div>
+     
     </div>
     
 
