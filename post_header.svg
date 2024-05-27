@@ -1,5 +1,5 @@
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 24" width="60" height="24">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 20" width="100" height="40">
     <foreignObject width="100%" height="100%">
         <div xmlns="http://www.w3.org/1999/xhtml">
             <style>
@@ -18,8 +18,11 @@
                 }
             </style>
             <div class="tag-container">
-                <strong style="display: flex; align-items: center; height: 100%;">POST</strong>
+                <div class="tag">POST</div>
             </div>
         </div>
     </foreignObject>
 </svg>
+
+
+
