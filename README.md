@@ -73,7 +73,7 @@ In this section we will describe the API Namespaces and their endpoints in detai
 ---
 This namespace contains two endpoints one for creating and on for deleting buckets in the S3-compatible file system.
 
-<div align="left">
+<div style="display: inline-flex; align-items: center;">
     <img src="post.svg" alt="css-in-readme" width="40" height="20" style="vertical-align: middle;"> /bucket
 </div> 
    
