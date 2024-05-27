@@ -1,6 +1,8 @@
 # Storage API
 ***A REST API for the BUILDSPACE Core Platform***
-
+<div align="center">
+    <img src="post.svg" width="400" height="400" alt="css-in-readme">
+</div>
 
 ### The BUILDSPACE Project
 Imagine if buildings used Internet of things platforms and building information modelling solutions to collect data and then paired the data with aerial imaging from drones. This is what the EU-funded BUILDSPACE project plans to do. It will create a platform to allow the integration of these heterogeneous data and offer services at building scale. It will allow the integration of digital twins and provide decision support services for energy demand prediction at the city scale. At building level, digital twin services will be tested during the construction of a new building in Poland. In terms of city services, their link to building digital twins will be tested in three cities in Greece, Latvia and Slovenia.
