@@ -35,8 +35,5 @@
     // Replace the placeholder text with the dynamic string
     var dynamicString = "DynamicContent";
     textElement.textContent = dynamicString;
-
-    // Optionally, style the dynamic text
-    textElement.innerHTML = dynamicString;
 </script>
 
