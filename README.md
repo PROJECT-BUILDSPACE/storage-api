@@ -1,10 +1,10 @@
 # Storage API
 ***A REST API for the BUILDSPACE Core Platform***
 
-### The BUILDSPACE Project
+## The BUILDSPACE Project
 Imagine if buildings used Internet of things platforms and building information modelling solutions to collect data and then paired the data with aerial imaging from drones. This is what the EU-funded BUILDSPACE project plans to do. It will create a platform to allow the integration of these heterogeneous data and offer services at building scale. It will allow the integration of digital twins and provide decision support services for energy demand prediction at the city scale. At building level, digital twin services will be tested during the construction of a new building in Poland. In terms of city services, their link to building digital twins will be tested in three cities in Greece, Latvia and Slovenia.
 
-### API Overall Description
+## API Overall Description
 This repository contains the source code of the BUILDSPACE Core Platform REST API. The API contains **four namespaces**, namely:
 
 | Namespace  | Description  |
@@ -64,42 +64,50 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 
 + 📁 **globals**: Contains the globals package used to initialize global variables for the API.
 
-### Namespace Breakdown
+## Namespace Breakdown
 In this section we will describe the API Namespaces and their endpoints in details. We will also provide example requests using ```curl```.
 
 **Note:** For all requests users must provide a JWT Bearer token from the OIDC Provider (same provider as the one in the oauth package).
 
-#### Buckets
+### Buckets (/bucket)
 ---
 This namespace contains two endpoints one for creating and on for deleting buckets in the S3-compatible file system.
 
-<div alt="css-in-readme" style="display: flex; align-items: center;">
-    <img src="post.svg" alt="css-in-readme" style="vertical-align: middle; width: 50px; height: 25px;"> 
-    <span style="margin-left: 5px; margin-bottom: 5px;">/bucket</span>
+<div>
+	<img src="post.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
 </div>
 
+| Path | Body | Query Parameters |
+| ---- | --------------- | ---------------- |
+| / | models.Bucket  | Not applicable   |
 
    
 ```curl
 curl --location 'https://api-buildspace.euinno.eu/bucket' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer <JWT Token>
+--header 'Authorization: Bearer {JWT Token}
 --data '{
-    "_id": "< ID of Bucket >" ,
-    "name": "< Name of the Bucket >"
+    "_id": "{ID of Bucket}" ,
+    "name": "{Name of the Bucket}"
 }'
 ```
 
-<div style="background-color: #ffebee; border-left: 5px solid #f44336; padding: 10px; margin: 10px 0; display: inline-flex; align-items: center;">
-  <strong style="margin-right: 10px;">DELETE</strong> /bucket/{bucket_id}
+
+<div>
+	<img src="delete.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
 </div>
 
+
+| Path | Body | Query Parameters |
+| ---- | --------------- | ---------------- |
+| /{file ID} | models.Bucket  | Not applicable   |
+
 ```
-curl --location --request DELETE 'https://api-buildspace.euinno.eu/bucket/<bucket_id>' \
---header 'Authorization: <JWT Token> '
+curl --location --request DELETE 'https://api-buildspace.euinno.eu/bucket/{bucket_id}' \
+--header 'Authorization: {JWT Token]'
 ```
 
-#### Copernicus
+### Copernicus (/copernicus)
 ---
 This namespace contains four endpoints to manage the Copernicus integrated services.
 
