@@ -24,7 +24,8 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 + 📁 **docs**: Docs package contains the Swagger documentation. Online version of the Swagger can also be found [here](https://api-buildspace.euinno.eu/swagger/index.html#/ "here").
 
 + 📁 **dbs**: Contains the source code of the **metaDB** and **filestorage** packages. The metaDB package manages the meta information of the uploaded files, in cotrast to the filestorage that manages the upload/download/copy/etc. of files in the filesystem
-        └── 📁meta
+
+  	└── 📁meta
   
             └── files.go
   
@@ -41,15 +42,16 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 
 + 📁 **handlers**: Contains the handlers package source code that includes the HTTP handler functions of the API
   
-└── ```buckets.go```: Handler functions for the **Bucket** namespace
 
-└── ```copernicus.go```: Handler functions for the **Copernicus** namespace
+	└── buckets.go: Handler functions for the **Bucket** namespace
 
-└── ```folders.go```: Handler functions for the **Folder** namespace
+	└── copernicus.go: Handler functions for the **Copernicus** namespace
 
-└── ```local_files.go```: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
+	└── ```folders.go```: Handler functions for the **Folder** namespace
 
-└── ```prod_files.go```: Handler functions for the **Files** namespace
+	└── local_files.go: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
+
+	└── prod_files.go: Handler functions for the **Files** namespace
 
 + 📁 **middleware**: Contains the middleware package source code used to identify user (by interpreting the JWT Bearer Token) before perfoming any request and extract useful information regarding the Organizations and permissions of the user.
 
