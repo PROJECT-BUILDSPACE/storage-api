@@ -21,19 +21,8 @@
             <div class="tag-container">
                 <div class="tag">
                     <strong>POST</strong>
-                    <text> PlaceHolder </text>
                 </div>
             </div>
         </div>
     </foreignObject>
 </svg>
-
-<script>
-    // Retrieve the text element from the SVG
-    var textElement = document.querySelector('svg text');
-
-    // Replace the placeholder text with the dynamic string
-    var dynamicString = "DynamicContent";
-    textElement.textContent = dynamicString;
-</script>
-
