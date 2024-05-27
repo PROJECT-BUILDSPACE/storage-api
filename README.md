@@ -25,18 +25,30 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 
 + 📁 **dbs**: Contains the source code of the **metaDB** and **filestorage** packages. The metaDB package manages the meta information of the uploaded files, in cotrast to the filestorage that manages the upload/download/copy/etc. of files in the filesystem
         └── 📁meta
+  
             └── files.go
+  
             └── folders.go
+  
             └── mainMeta.go
+  
             └── parts.go
+  
         └── 📁objectStorage
+  
             └── objectStorage.go
+  
 
 + 📁 **handlers**: Contains the handlers package source code that includes the HTTP handler functions of the API
+  
 └── ```buckets.go```: Handler functions for the **Bucket** namespace
+
 └── ```copernicus.go```: Handler functions for the **Copernicus** namespace
+
 └── ```folders.go```: Handler functions for the **Folder** namespace
+
 └── ```local_files.go```: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
+
 └── ```prod_files.go```: Handler functions for the **Files** namespace
 
 + 📁 **middleware**: Contains the middleware package source code used to identify user (by interpreting the JWT Bearer Token) before perfoming any request and extract useful information regarding the Organizations and permissions of the user.
