@@ -30,8 +30,8 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
 
 + 📁 **dbs**: Contains the source code of the **metaDB** and **filestorage** packages. The metaDB package manages the meta information of the uploaded files, in cotrast to the filestorage that manages the upload/download/copy/etc. of files in the filesyste
   
-
-  	└── 📁**meta**
+```
+  	└── 📁meta
   
             └── files.go
   
@@ -41,23 +41,21 @@ The API is developed in Go and all dependencies can be found in the ```go.mod```
   
             └── parts.go
   
-        └── 📁**objectStorage**
+        └── 📁objectStorage
   
             └── objectStorage.go
-  
+  ```
 
 + 📁 **handlers**: Contains the handlers package source code that includes the HTTP handler functions of the API
   
 ```
-	└── buckets.go: Handler functions for the <strong>Bucket</strong> namespace
+	└── buckets.go: Handler functions for the Bucket namespace
 
-	└── copernicus.go: Handler functions for the **Copernicus** namespace
+	└── copernicus.go: Handler functions for the Copernicus namespace
 
-	└── folders.go: Handler functions for the **Folder** namespace
+	└── folders.go: Handler functions for the Folder namespace
 
-	└── local_files.go: **DEPRECATED** Handler functions for the **Files** namespace (used for local deployment)
-
-	└── prod_files.go: Handler functions for the **Files** namespace
+	└── prod_files.go: Handler functions for the Files namespace
 ```
 + 📁 **middleware**: Contains the middleware package source code used to identify user (by interpreting the JWT Bearer Token) before perfoming any request and extract useful information regarding the Organizations and permissions of the user.
 
@@ -120,7 +118,7 @@ This namespace contains four endpoints to manage the Copernicus integrated servi
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -138,7 +136,7 @@ curl --location 'https://api-buildspace.euinno.eu/copernicus/{service}/getall' \
 ```
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -177,7 +175,7 @@ curl --location 'https://api-buildspace.euinno.eu/copernicus/{service}/dataset' 
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -242,7 +240,7 @@ curl --location 'https://api-buildspace.euinno.eu/file/{File ID}?part={part_numb
 ```
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -262,7 +260,7 @@ curl --location 'https://api-buildspace.euinno.eu/info/file?id={id}' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -343,7 +341,7 @@ curl --location 'https://api-buildspace.euinno.eu/folder' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
@@ -362,7 +360,7 @@ curl --location 'https://api-buildspace.euinno.eu/folder?id={folder_id}' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 80px; height: 80px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
 </div>
 
 
