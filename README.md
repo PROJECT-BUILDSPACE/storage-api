@@ -73,7 +73,9 @@ In this section we will describe the API Namespaces and their endpoints in detai
 ---
 This namespace contains two endpoints one for creating and on for deleting buckets in the S3-compatible file system.
 
-<strong style="background-color: #e8f5e9; border-left: 5px solid #4caf50; padding: 10px; margin: 10px 0; display: inline-flex; align-items: center; margin-right: 10px;">POST</strong> /bucket
+<div align="left">
+    <img src="post.svg" alt="css-in-readme"> /bucket
+</div> 
    
 ```curl
 curl --location 'https://api-buildspace.euinno.eu/bucket' \
