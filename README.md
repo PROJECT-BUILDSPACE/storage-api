@@ -84,6 +84,8 @@ This namespace contains two endpoints one for creating and on for deleting bucke
   </tr>
 </table>
 
+![Dynamic SVG](post.svg)
+
 
    
 ```curl
