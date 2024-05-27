@@ -118,7 +118,7 @@ This namespace contains four endpoints to manage the Copernicus integrated servi
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -136,7 +136,7 @@ curl --location 'https://api-buildspace.euinno.eu/copernicus/{service}/getall' \
 ```
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -175,7 +175,7 @@ curl --location 'https://api-buildspace.euinno.eu/copernicus/{service}/dataset' 
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -240,7 +240,7 @@ curl --location 'https://api-buildspace.euinno.eu/file/{File ID}?part={part_numb
 ```
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -260,7 +260,7 @@ curl --location 'https://api-buildspace.euinno.eu/info/file?id={id}' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -341,7 +341,7 @@ curl --location 'https://api-buildspace.euinno.eu/folder' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -360,7 +360,7 @@ curl --location 'https://api-buildspace.euinno.eu/folder?id={folder_id}' \
 
 
 <div>
-	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 75px; height: 75px;">
+	<img src="get.svg" alt="css-in-readme" style="vertical-align: middle; width: 70px; height: 70px;">
 </div>
 
 
@@ -457,13 +457,14 @@ and as soon as it finishes:
 
 ```go run main.go```
 
-**Note 1: ** These services can be deployed in a local cluster following instructions [here](https://github.com/PROJECT-BUILDSPACE/kubernetes-manifests "here").
-**Note 2: ** In the need of customization, one should change the URL's of these services and/or the implementation of the interfaces in the ```dbs``` folder
+**Note 1:** These services can be deployed in a local cluster following instructions [here](https://github.com/PROJECT-BUILDSPACE/kubernetes-manifests "here").
+
+**Note 2:** In the need of customization, one should change the URL's of these services and/or the implementation of the interfaces in the ```dbs``` folder.
 
 #### Using Docker
 Run the Core Platform using the official Docker image [buildspace/storage-api](https://hub.docker.com/repository/docker/buildspace/storage-api/ "buildspace/storage-api").
 
-**Note: ** The same restrictions as running from source code apply here as well.
+**Note:** The same restrictions as running from source code apply here as well.
 
 ### Funding
 This Platform was developed in the context of the [BUILDSPACE](https://buildspaceproject.eu/ "BUILDSPACE") project. BUILDSPACE has received funding from European Union Horizon EUSPA 2021 Programme (HORIZON-EUSPA-2021-SPACE) under grant agreement nº [101082575](https://doi.org/10.3030/101082575 "101082575").
