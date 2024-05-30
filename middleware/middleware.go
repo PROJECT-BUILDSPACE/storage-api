@@ -80,13 +80,27 @@ func (a *AuthImplementation) AuthMiddleware(h http.HandlerFunc) http.HandlerFunc
 			queryValues := r.URL.Query()
 			id = queryValues.Get("id")
 
-			// If not start decoding body
+			// If not check if path in query params
 			if id == "" {
-				if err := readRequestBody(r, &data); err != nil {
-					utils.RespondWithError(w, http.StatusUnauthorized, "Unable to resolve Group.", "Unidentifiable group.", "MID0005")
-					return
+
+				pathQuery := queryValues.Get("path")
+				// Remove trailing slash to handle cases like "/s1/s2/s3/s4/"
+				pathQuery = strings.TrimSuffix(pathQuery, "/")
+				pathQuery = strings.TrimPrefix(pathQuery, "/")
+
+				// If not start decoding body
+				if pathQuery == "" {
+
+					if err := readRequestBody(r, &data); err != nil {
+						utils.RespondWithError(w, http.StatusUnauthorized, "Unable to resolve Group.", "Unidentifiable group.", "MID0005")
+						return
+					}
+					q = extractKeysAndValues(data)
+				} else {
+					pathSegments := strings.Split(pathQuery, "/")
+					q = map[string]string{"name": pathSegments[0]}
+					collection = "folder"
 				}
-				q = extractKeysAndValues(data)
 			} else {
 				q = map[string]string{"_id": id}
 			}
@@ -239,16 +253,23 @@ func grabGroupId(q map[string]string, collection string) (string, error) {
 		}
 
 	case "folder":
-
-		dbResult, err := folderDB.GetOneByID(value)
-		if err != nil {
-			return "", err
-		}
-
-		if dbResult.Level == 0 {
+		if key == "name" {
+			dbResult, err := folderDB.GetRootByName(value)
+			if err != nil {
+				return "", err
+			}
 			group = dbResult.Id
 		} else {
-			group = dbResult.Ancestors[0]
+			dbResult, err := folderDB.GetOneByID(value)
+			if err != nil {
+				return "", err
+			}
+
+			if dbResult.Level == 0 {
+				group = dbResult.Id
+			} else {
+				group = dbResult.Ancestors[0]
+			}
 		}
 
 	case "bucket":

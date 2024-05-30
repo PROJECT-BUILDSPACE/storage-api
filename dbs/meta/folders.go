@@ -43,7 +43,7 @@ func (folderstore *FolderStore) GetOneByID(folderID string) (models.Folder, erro
 // GetOneByID is to get a folder by ID.
 func (folderstore *FolderStore) GetRootByName(folderName string) (models.Folder, error) {
 	var folder models.Folder
-	err := db.Collection(FOLDERSSCOLLECTION).FindOne(context.Background(), bson.M{"meta.title": folderName, "ancestors": nil}).Decode(&folder)
+	err := db.Collection(FOLDERSSCOLLECTION).FindOne(context.Background(), bson.M{"meta.title": folderName, "parent": "", "level": 0}).Decode(&folder)
 	return folder, err
 }
 
@@ -75,6 +75,7 @@ func (folderstore *FolderStore) UpdateWithId(folder models.Folder) (folderUpdate
 			"parent":    folder.Parent,
 			"files":     folder.Files,
 			"folders":   folder.Folders,
+			"level":     folder.Level,
 			"size":      folder.Size,
 		},
 	}
@@ -177,4 +178,10 @@ func (folderstore *FolderStore) UpdateAncestorSize(ancestors []string, size int6
 	}
 
 	return err
+}
+
+// GetCursorByNameLevel is to get a cursor with folders given Folder Name, Group ID and Folder Level.
+func (folderstore *FolderStore) GetCursorByNameLevel(name string, group string, level int) (*mongo.Cursor, error) {
+	cursor, err := db.Collection(FOLDERSSCOLLECTION).Find(context.Background(), bson.M{"meta.title": name, "ancestors.0": group, "level": level})
+	return cursor, err
 }

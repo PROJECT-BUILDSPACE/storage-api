@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -433,6 +434,23 @@ InfiniteLoop:
 			break InfiniteLoop
 		} else {
 			time.Sleep(globals.CheckTime)
+		}
+	}
+}
+
+// GrainFolders helps grab the correct folder from a cursor.
+func GrainFolders(ctx context.Context, candidateFolder models.Folder, parentName string, resultChan chan<- models.Folder, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	select {
+	case <-ctx.Done():
+		// If context is done, exit the goroutine
+		return
+	// case <-time.After(2 * time.Second): // Simulate processing time
+	default:
+		parent, _ := globals.FolderDB.GetOneByID(candidateFolder.Parent)
+		if parent.Meta.Title == parentName {
+			resultChan <- candidateFolder
 		}
 	}
 }

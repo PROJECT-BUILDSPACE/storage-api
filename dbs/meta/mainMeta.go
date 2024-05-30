@@ -76,6 +76,9 @@ type IFolderStore interface {
 
 	// UpdateWithId is a function to update a Folder
 	UpdateWithId(folder models.Folder) (folderUpdated models.Folder, err error)
+
+	// GetCursorByNameLevel is to get a cursor with folders given Folder Name, Group ID and Folder Level.
+	GetCursorByNameLevel(name string, group string, level int) (*mongo.Cursor, error)
 }
 
 // IPartStore is a Database Interface for the Sessions

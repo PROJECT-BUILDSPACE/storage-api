@@ -114,6 +114,7 @@ func main() {
 	r.HandleFunc("/folder/{id}", mid.AuthMiddleware(handle.DeleteFolder)).Methods("DELETE")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.UpdateFolder)).Methods("PUT")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("id", "{folderId}").Methods("GET")
+	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("path", "{folderPath}").Methods("GET")
 	r.HandleFunc("/folder/list", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
 
 	// Copernicus

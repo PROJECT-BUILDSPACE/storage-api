@@ -59,12 +59,12 @@ func Init() {
 
 	_accessKeyID := os.Getenv("ACCESS_KEY")
 	if _accessKeyID == "" {
-		_accessKeyID = "FyDfKIsTNXg9iCNQw4da"
+		_accessKeyID = "zsJH1qCyMKKuFSsr3APG"
 	}
 
 	_secretAccessKey := os.Getenv("SECRET_ACCESS_KEY")
 	if _secretAccessKey == "" {
-		_secretAccessKey = "pyHGVj2LPjp0kFmtDns7tnZLPiRlqHtmsC874pPo"
+		_secretAccessKey = "kYDY4PKvcEDkNKRHMcZLJN0IzBHFrrRPMIi3ORiy"
 	}
 
 	// Initialize minio client file.

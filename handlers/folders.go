@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -315,21 +317,89 @@ func DeleteFolder(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 func GetFolder(w http.ResponseWriter, r *http.Request) {
 
-	folderID := r.FormValue("id")
+	// folderPath := r.FormValue("folderPath")
+	queryValues := r.URL.Query()
+	folderID := queryValues.Get("id")
+
+	folderPath := queryValues.Get("path")
 
 	var folder models.Folder
 	var err error
 
-	// Get folder by folder ID
-	folder, err = globals.FolderDB.GetOneByID(folderID)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
+	if folderID != "" && folderPath != "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Cannot retrieve folder.", "Cannot process both path and ID.", "FOL0023")
 		return
+
+	} else if folderID != "" {
+		// Get folder by folder ID
+		folder, err = globals.FolderDB.GetOneByID(folderID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
+			return
+		}
+
+	} else {
+		folderPath = strings.TrimSuffix(folderPath, "/")
+		folderPath := strings.TrimPrefix(folderPath, "/")
+
+		groupId := r.Header.Get("X-Group-Id")
+
+		path := strings.Split(folderPath, "/")
+
+		if len(path) == 1 {
+			folder, err = globals.FolderDB.GetOneByID(groupId)
+		} else {
+			folderName := path[len(path)-1]
+
+			foldersCursor, err := globals.FolderDB.GetCursorByNameLevel(folderName, groupId, len(path)-1)
+			defer foldersCursor.Close(context.Background())
+
+			if err != nil {
+				utils.RespondWithError(w, http.StatusNotFound, "Could not get folder.", err.Error(), "FOL0023")
+				return
+			}
+
+			// Create a context that we can cancel
+			ctx2, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// Channel to receive the result
+			resultChan := make(chan models.Folder, 1)
+
+			// WaitGroup to wait for all goroutines to finish
+			var wg sync.WaitGroup
+
+			// Start a goroutine for each folder
+			for foldersCursor.Next(context.Background()) {
+				var result bson.M
+				var inFolder models.Folder
+				if err := foldersCursor.Decode(&result); err != nil {
+					utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FOL0028")
+					return
+				}
+				bsonBytes, _ := bson.Marshal(result)
+				bson.Unmarshal(bsonBytes, &inFolder)
+
+				wg.Add(1)
+				go utils.GrainFolders(ctx2, inFolder, path[len(path)-2], resultChan, &wg)
+			}
+
+			// Wait for a result from one of the goroutines
+			select {
+			case folder = <-resultChan:
+				// Condition met, cancel all other goroutines
+				// cancel()
+				close(resultChan)
+			case <-time.After(30 * time.Second): // Timeout to prevent infinite waiting
+				fmt.Println("Timeout reached, no condition met")
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Println(folder)
 	json.NewEncoder(w).Encode(folder)
+
 }
 
 // UpdateFolder handles the /folder put request.
