@@ -28,7 +28,7 @@ func Init() {
 	}
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	if clientSecret == "" {
-		clientSecret = "xdoNxAmEDv0zZuoskyh87gEMPNARWkID"
+		clientSecret = "cD9VJiGEttbogB8UBcRSi0ZrJobaWCcN"
 	}
 
 	ctx := context.Background()

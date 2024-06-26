@@ -70,6 +70,13 @@ func handleJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var postFile models.File
+	// postFile is the document of the file for DB
+	// Contains: Original Title (with Type)
+	err = json.NewDecoder(r.Body).Decode(&postFile)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not decode request body.", err.Error(), "FIL0005")
+		return
+	}
 
 	// Get new file's ID
 	fileID, err := utils.GenerateUUID()
@@ -85,19 +92,35 @@ func handleJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// postFile is the document of the file for DB
-	// Contains: Original Title (with Type)
-	err = json.NewDecoder(r.Body).Decode(&postFile)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not decode request body.", err.Error(), "FIL0005")
-		return
-	}
 	postFile.Id = fileID
 
 	folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
 	if err != nil || folder.Id == "" {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "FIL0008")
 		return
+	}
+
+	// Check if title is illegal
+	filesCursor, err := globals.FileDB.GetCursorByFolderID(postFile.FolderID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not obtain siblings.", err.Error(), "FIL0036")
+		return
+	}
+	defer filesCursor.Close(context.Background())
+
+	for filesCursor.Next(context.Background()) {
+		var result bson.M
+		var inFile models.File
+		if err := filesCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FIL0037")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &inFile)
+		if inFile.Meta.Title == postFile.Meta.Title {
+			utils.RespondWithError(w, http.StatusConflict, "File Exists.", "Cannot assign name to this file, since it is already taken.", "FIL0038")
+			return
+		}
 	}
 
 	update := models.Updated{
