@@ -35,15 +35,6 @@ func (filestore *FileStore) GetOneByID(fileID string) (models.File, error) {
 	return file, err
 }
 
-// GetOneByTaskID is to get a file by its taskID.
-func (filestore *FileStore) GetOneByTaskID(taskID string) (models.File, error) {
-
-	var file models.File
-
-	err := db.Collection(FILESCOLLECTION).FindOne(context.Background(), bson.M{"copernicus_details.task": taskID}).Decode(&file)
-	return file, err
-}
-
 // GetOneByFingerprint is to get a file by its taskID.
 func (filestore *FileStore) GetOneByFingerprint(fingerprint string) (models.File, error) {
 
@@ -75,14 +66,13 @@ func (filestore *FileStore) UpdateWithId(file models.File) (objUpdated models.Fi
 	filter := bson.M{"_id": file.Id}
 	update := bson.M{
 		"$set": bson.M{
-			"meta":               file.Meta,
-			"folder":             file.FolderID,
-			"original_title":     file.OriginalTitle,
-			"ancestors":          file.Ancestors,
-			"file_type":          file.FileType,
-			"size":               file.Size,
-			"total":              file.Total,
-			"copernicus_details": file.CopernicusDetails,
+			"meta":           file.Meta,
+			"folder":         file.FolderID,
+			"original_title": file.OriginalTitle,
+			"ancestors":      file.Ancestors,
+			"file_type":      file.FileType,
+			"size":           file.Size,
+			"total":          file.Total,
 		},
 	}
 	_, erro := db.Collection(FILESCOLLECTION).UpdateOne(context.TODO(), filter, update)

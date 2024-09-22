@@ -23,9 +23,6 @@ type IFileStore interface {
 	// Get file with params
 	GetOneByID(fileID string) (models.File, error)
 
-	// Get file with params
-	GetOneByTaskID(taskID string) (models.File, error)
-
 	// Get many with params
 	GetCursorByFolderID(folderID string) (*mongo.Cursor, error)
 
@@ -103,6 +100,28 @@ type IPartStore interface {
 	DeleteManyWithBucket(bucketId string) error
 }
 
+// ICopernicusStore is a Database Interface for Copernicus inputs
+type ICopernicusStore interface {
+
+	// Insert a new stream
+	InsertOne(copenicus_input models.CopernicusRecord) error
+
+	// Get a part by ID
+	GetOneByID(inputId string) (models.CopernicusRecord, error)
+
+	// Get one by reference file
+	GetOneByFileID(fileId string) (models.CopernicusRecord, error)
+
+	// Delete by _id
+	DeleteOneByFileID(inputId string) error
+
+	// Update with id
+	UpdateWithId(copenicus_input models.CopernicusRecord) (models.CopernicusRecord, error)
+
+	// Get cursor by service
+	GetCursorByService(service string) (*mongo.Cursor, error)
+}
+
 // FileStore ...
 type FileStore struct {
 	mu sync.RWMutex
@@ -118,6 +137,11 @@ type PartStore struct {
 	// mu sync.Mutex
 }
 
+// FolderStore ...
+type CopernicusStore struct {
+	mu sync.RWMutex
+}
+
 // db is a Client of mongoDB
 var db *mongo.Database
 
@@ -130,7 +154,7 @@ func NewDB() {
 		database = "minio"
 	}
 	if mongoURL == "" {
-		mongoURL = "mongodb://minikube.local:30000"
+		mongoURL = "mongodb://172.31.154.5:30017"
 	}
 	log.Println("Starting at " + mongoURL)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

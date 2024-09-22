@@ -50,16 +50,16 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 	// return w
 }
 
-// @title BUILSPACE Core Platform Swagger API
+// @title Core Platform Swagger API
 // @version 1.0
-// @description This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.
+// @description This is a swagger for the API that was developed as the backbone of the Core Platform.
 // @termsOfService http://swagger.io/terms/
 
 // @SecurityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
 
-// @contact.name BUILDSPACE Core Platform Support
+// @contact.name Core Platform Support
 // @contact.url http://www.swagger.io/support
 // @contact.email isotiropoulos@singularlogic.eu
 
@@ -105,7 +105,7 @@ func main() {
 		// r.HandleFunc("/copy/file", mid.AuthMiddleware(handle.CopyFileLocal)).Methods("POST")
 		// r.HandleFunc("/move/file", mid.AuthMiddleware(handle.MoveFileLocal)).Methods("PUT")
 	} else {
-		log.Panicln("Deployment " + deployment + " not supprted. Please select PROD or LOCAL. If still in doubt contact the BUILDSPACE Support Team.")
+		log.Panicln("Deployment " + deployment + " not supprted. Please select PROD or LOCAL. If still in doubt contact the Core Platform Support Team.")
 	}
 
 	// Folder-wise
@@ -121,7 +121,8 @@ func main() {
 	r.HandleFunc("/copernicus/{service}/getall", mid.NaiveAuthMiddleware(handle.GetList)).Methods("GET")
 	r.HandleFunc("/copernicus/{service}/getform/{id}", mid.NaiveAuthMiddleware(handle.GetForm)).Methods("GET")
 	r.HandleFunc("/copernicus/{service}/dataset", mid.NaiveAuthMiddleware(handle.PostDataset)).Methods("POST")
-	r.HandleFunc("/copernicus/{service}/dataset/{id}", mid.NaiveAuthMiddleware(handle.GetStatus)).Methods("GET")
+	r.HandleFunc("/copernicus/status/dataset/{fileId}", mid.NaiveAuthMiddleware(handle.GetStatus)).Methods("GET")
+	r.HandleFunc("/copernicus/{service}/available", mid.NaiveAuthMiddleware(handle.GetAvailable)).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 

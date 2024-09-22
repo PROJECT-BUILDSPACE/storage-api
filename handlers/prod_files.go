@@ -458,6 +458,12 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = globals.CopernicusDB.DeleteOneByFileID(file.Id)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete Copernicus details.", err.Error(), "FIL0078")
+		return
+	}
+
 	json.NewEncoder(w).Encode(file)
 }
 

@@ -108,12 +108,12 @@ func (a *AuthImplementation) AuthMiddleware(h http.HandlerFunc) http.HandlerFunc
 			q = map[string]string{"_id": id}
 		}
 
-		groupID, err := grabGroupId(q, collection)
+		groupID, groupName, err := grabGroupId(q, collection)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusUnauthorized, "Unable to resolve Group.", err.Error(), "MID0011")
 			return
 		}
-		if !utils.ItemInArray(claims.Groups, groupID) {
+		if !utils.ItemInArray(claims.Groups, groupName) {
 			utils.RespondWithError(w, http.StatusForbidden, "Permission Denied.", "No permission rights for user in group.", "MID0006")
 			return
 		}
@@ -216,9 +216,10 @@ func extractKeysAndValues(data interface{}) map[string]string {
 	return result
 }
 
-func grabGroupId(q map[string]string, collection string) (string, error) {
+func grabGroupId(q map[string]string, collection string) (string, string, error) {
 
-	var group string
+	var groupID string
+	var groupName string
 	var key string
 	var value string
 	var err error
@@ -234,51 +235,75 @@ func grabGroupId(q map[string]string, collection string) (string, error) {
 
 		if key == "_id" {
 			var dbResult models.File
+			var dbResult2 models.Folder
 			dbResult, err = fileDB.GetOneByID(value)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
-			group = dbResult.Ancestors[0]
+			dbResult2, err = folderDB.GetOneByID(dbResult.Ancestors[0])
+			if err != nil {
+				return "", "", err
+			}
+			groupID = dbResult2.Id
+			groupName = dbResult2.Meta.Title
 		} else {
 			var dbResult models.Folder
 			dbResult, err = folderDB.GetOneByID(value)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			if dbResult.Level == 0 {
-				group = dbResult.Id
+				groupID = dbResult.Id
+				groupName = dbResult.Meta.Title
 			} else {
-				group = dbResult.Ancestors[0]
+				id := dbResult.Ancestors[0]
+				dbResult, err = folderDB.GetOneByID(id)
+				if err != nil {
+					return "", "", err
+				}
+				groupID = dbResult.Id
+				groupName = dbResult.Meta.Title
 			}
+
 		}
 
 	case "folder":
 		if key == "name" {
 			dbResult, err := folderDB.GetRootByName(value)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
-			group = dbResult.Id
+			groupID = dbResult.Id
+			groupName = dbResult.Meta.Title
 		} else {
 			dbResult, err := folderDB.GetOneByID(value)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 
 			if dbResult.Level == 0 {
-				group = dbResult.Id
+				groupID = dbResult.Id
+				groupName = dbResult.Meta.Title
 			} else {
-				group = dbResult.Ancestors[0]
+				id := dbResult.Ancestors[0]
+				dbResult, err = folderDB.GetOneByID(id)
+				if err != nil {
+					return "", "", err
+				}
+				groupID = dbResult.Id
+				groupName = dbResult.Meta.Title
 			}
 		}
 
 	case "bucket":
 		dbResult, err := folderDB.GetOneByID(value)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		group = dbResult.Id
+		groupID = dbResult.Id
+		groupName = dbResult.Meta.Title
+
 	}
 
-	return group, err
+	return groupID, groupName, err
 }

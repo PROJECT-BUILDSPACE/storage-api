@@ -397,7 +397,6 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Println(folder)
 	json.NewEncoder(w).Encode(folder)
 
 }

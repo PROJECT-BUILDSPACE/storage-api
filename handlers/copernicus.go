@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
 	"github.com/minio/minio-go/v7"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"time"
 
@@ -255,7 +257,6 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 
 	var b models.CopernicusTask
 	json.Unmarshal(body, &b)
-
 	postFile.FolderID = globals.COPERNICUS_BUCKET_ID
 	//get bucket
 	folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
@@ -283,11 +284,10 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
 
 	copDetails := models.CopernicusDetails{
-		TaskID:      b.RequestID,
-		Fingerprint: fprint,
-		Status:      b.State,
-		Service:     service,
-		Error:       models.CopernicusTaskError{},
+		TaskID:  b.RequestID,
+		Status:  b.State,
+		Service: service,
+		Error:   models.CopernicusTaskError{},
 	}
 
 	meta := postFile.Meta
@@ -297,11 +297,25 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	meta.Write = folder.Meta.Write
 	meta.Update = update
 	meta.Title = title
-	postFile.CopernicusDetails = copDetails
+	// postFile.CopernicusDetails = copDetails
 	postFile.Meta = meta
 	err = globals.FileDB.InsertOne(postFile)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error in insterting file.", err.Error(), "COP0012")
+		return
+	}
+
+	copInput := models.CopernicusRecord{
+		Id:            fprint,
+		FileId:        fileID,
+		DatasetName:   reqBody.DatasetName,
+		RequestParams: reqBody.Body,
+		TaskDetails:   copDetails,
+	}
+
+	err = globals.CopernicusDB.InsertOne(copInput)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in storing copernicus input.", err.Error(), "COP0035")
 		return
 	}
 
@@ -319,21 +333,20 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go utils.CheckCopernicusStatus(postFile, claims.Subject)
+	go utils.CheckCopernicusStatus(copInput, claims.Subject)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(postFile)
 }
 
-// GetStatus handles the /copernicus/{service}/dataset/{id} GET request.
+// GetStatus handles the/copernicus/status/dataset/{fileId} GET request.
 // @Summary Download dataset (if the Copernicus task is completed).
 // @Description This endpoint checks the status of a Copernicus task and if it is completed it downloads the file and stores it in MinIO (under the Copernicus public bucket).
 // @Description In case of uncompleted task, the response is a json specifying the current status.
 // @Tags Copernicus
 // @Produce json
-// @Param service path string true "Service (currently available 'ads' and 'cds')"
-// @Param id path string true "ID of the dataset to be downloaded"
+// @Param fileId path string true "ID of the dataset to be downloaded"
 // @Success 200 {object} models.File "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
@@ -350,30 +363,31 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	taskID := params["id"]
-	service := params["service"]
+	fileID := params["fileId"]
+
+	copRec, err := globals.CopernicusDB.GetOneByFileID(fileID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "COP0038")
+		return
+	}
+
 	base := ""
 	uid := ""
 	key := ""
 
-	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", err.Error(), "COP0016")
-		return
-	}
-
-	if service == "cds" {
+	if copRec.TaskDetails.Service == "cds" {
 		base = "https://cds.climate.copernicus.eu/api/v2/tasks/"
 		uid = globals.CDS_UID
 		key = globals.CDS_KEY
 	}
 
-	if service == "ads" {
+	if copRec.TaskDetails.Service == "ads" {
 		base = "https://ads.atmosphere.copernicus.eu/api/v2/tasks/"
 		uid = globals.ADS_UID
 		key = globals.ADS_KEY
 	}
 
-	req, err := http.Get(base + string(taskID))
+	req, err := http.Get(base + string(copRec.TaskDetails.TaskID))
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Destination doesn't exist.", err.Error(), "COP0017")
 		return
@@ -411,7 +425,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		var postFile models.File
 
 		//get relevant file from db
-		postFile, err = globals.FileDB.GetOneByTaskID(taskID)
+		postFile, err = globals.FileDB.GetOneByID(copRec.FileId)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving file from database.", err.Error(), "COP0020")
 			return
@@ -490,7 +504,6 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 			if size == 0 {
 				return
 			}
-			//fmt.Println(size, partSize)
 			wg.Add(1)
 			go func(partReader io.Reader, item int) {
 				//post file
@@ -555,4 +568,50 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 
+}
+
+// GetAvailable handles the /copernicus/{service}/available GET request.
+// @Summary Get a list of available Copernicus datasets, based on services.
+// @Description This endpoint returns all available-for-download datasets
+// @Tags Copernicus
+// @Produce json
+// @Param service path string true "Service (currently available 'ads' and 'cds', or 'all' for no specific service)"
+// @Success 200 {object} []models.CopernicusRecord "OK"
+// @Failure 400 {object} models.ErrorReport "Bad Request"
+// @Failure 500 {object} models.ErrorReport "Internal Server Error"
+// @Failure 503 {object} models.ErrorReport "Service Anavailable"
+// @Router /copernicus/{service}/available [get]
+// @Security BearerAuth
+func GetAvailable(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	service := params["service"]
+
+	if service != "cds" && service != "ads" && service != "all" {
+		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Select among 'cds', 'ads' and 'all", "COP0047")
+		return
+	}
+
+	var response []models.CopernicusRecord
+
+	dataCursor, err := globals.CopernicusDB.GetCursorByService(service)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not open cursor.", err.Error(), "COP0036")
+		return
+	}
+	defer dataCursor.Close(context.Background())
+
+	for dataCursor.Next(context.Background()) {
+		var result bson.M
+		var record models.CopernicusRecord
+		if err := dataCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve cursor.", err.Error(), "FIL0037")
+			return
+		}
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &record)
+		response = append(response, record)
+	}
+
+	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
 }

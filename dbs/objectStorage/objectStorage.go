@@ -54,17 +54,17 @@ func Init() {
 
 	_minioURL := os.Getenv("MINIO_URL")
 	if _minioURL == "" {
-		_minioURL = "minikube.local:30900"
+		_minioURL = "minioapi-buildspace.euinno.eu"
 	}
 
 	_accessKeyID := os.Getenv("ACCESS_KEY")
 	if _accessKeyID == "" {
-		_accessKeyID = "Y6hrs9KMnBcgPYnvdWtc"
+		_accessKeyID = "sa5DGYVGi45FQ9JeRrfA"
 	}
 
 	_secretAccessKey := os.Getenv("SECRET_ACCESS_KEY")
 	if _secretAccessKey == "" {
-		_secretAccessKey = "tFGEYDtui5fyepyhkIBgKS8KN4G2KNnvYaG3oJZh"
+		_secretAccessKey = "RsyQoI8TFwACjOYjNMtMolx4ldxVgV0Ovq9Mi9nS"
 	}
 
 	// Initialize minio client file.

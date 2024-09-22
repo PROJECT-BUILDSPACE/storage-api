@@ -36,11 +36,7 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.CopernicusTaskError'
         description: Error details in case of status failed
-      fingerprint:
-        description: Fingerprint of the dataset (used to identify datasets based on
-          request parameters)
-        type: string
-      sercice:
+      service:
         description: Dataset's related service
         type: string
       status:
@@ -56,9 +52,29 @@ definitions:
         additionalProperties: true
         description: Request body
         type: object
-      datasetname:
+      dataset_name:
         description: Name of specific Copernicus API
         type: string
+    type: object
+  models.CopernicusRecord:
+    properties:
+      _id:
+        description: Copernicus body fingerprint as id
+        type: string
+      dataset_name:
+        description: Name of specific Copernicus API
+        type: string
+      file_id:
+        description: Reference File ID
+        type: string
+      parameters:
+        additionalProperties: true
+        description: Request body
+        type: object
+      task_details:
+        allOf:
+        - $ref: '#/definitions/models.CopernicusDetails'
+        description: Details related to Copernicus datasets
     type: object
   models.CopernicusTaskError:
     properties:
@@ -196,10 +212,6 @@ definitions:
         items:
           type: string
         type: array
-      copernicus_details:
-        allOf:
-        - $ref: '#/definitions/models.CopernicusDetails'
-        description: Details related to Copernicus datasets
       file_type:
         description: The file's extention
         type: string
@@ -348,15 +360,15 @@ definitions:
 info:
   contact:
     email: isotiropoulos@singularlogic.eu
-    name: BUILDSPACE Core Platform Support
+    name: Core Platform Support
     url: http://www.swagger.io/support
-  description: This is a swagger for the API that was developed as a core platform
-    of the BUILDSPACE project.
+  description: This is a swagger for the API that was developed as the backbone of
+    the Core Platform.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: BUILSPACE Core Platform Swagger API
+  title: Core Platform Swagger API
   version: "1.0"
 paths:
   /bucket:
@@ -422,6 +434,42 @@ paths:
       summary: Delete bucket with all contents.
       tags:
       - Buckets
+  /copernicus/{service}/available:
+    get:
+      description: This endpoint returns all available-for-download datasets
+      parameters:
+      - description: Service (currently available 'ads' and 'cds', or 'all' for no
+          specific service)
+        in: path
+        name: service
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.CopernicusRecord'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+        "503":
+          description: Service Anavailable
+          schema:
+            $ref: '#/definitions/models.ErrorReport'
+      security:
+      - BearerAuth: []
+      summary: Get a list of available Copernicus datasets, based on services.
+      tags:
+      - Copernicus
   /copernicus/{service}/dataset:
     post:
       consumes:
@@ -472,14 +520,9 @@ paths:
         This endpoint checks the status of a Copernicus task and if it is completed it downloads the file and stores it in MinIO (under the Copernicus public bucket).
         In case of uncompleted task, the response is a json specifying the current status.
       parameters:
-      - description: Service (currently available 'ads' and 'cds')
-        in: path
-        name: service
-        required: true
-        type: string
       - description: ID of the dataset to be downloaded
         in: path
-        name: id
+        name: fileId
         required: true
         type: string
       produces:

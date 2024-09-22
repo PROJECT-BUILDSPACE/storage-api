@@ -27,7 +27,7 @@ import (
 func RespondWithError(w http.ResponseWriter, code int, message string, reason string, internalCode string) {
 
 	err := models.ErrorReport{
-		Message:        message + " Please contact the BUILDSPACE Support Team.",
+		Message:        message + " Please contact the Core Platform Support Team.",
 		Reason:         reason,
 		Status:         code,
 		InternalStatus: internalCode,
@@ -176,47 +176,47 @@ func GenerateRequestFingerprint(body models.CopernicusInput) (string, error) {
 }
 
 // CheckCopernicusStatus
-func CheckCopernicusStatus(dataset models.File, subject string) {
+func CheckCopernicusStatus(dataset models.CopernicusRecord, subject string) {
 	base := ""
 	uid := ""
 	key := ""
 
-	if dataset.CopernicusDetails.Service == "cds" {
+	if dataset.TaskDetails.Service == "cds" {
 		base = "https://cds.climate.copernicus.eu/api/v2/tasks/"
 		uid = globals.CDS_UID
 		key = globals.CDS_KEY
 	}
 
-	if dataset.CopernicusDetails.Service == "ads" {
+	if dataset.TaskDetails.Service == "ads" {
 		base = "https://ads.atmosphere.copernicus.eu/api/v2/tasks/"
 		uid = globals.ADS_UID
 		key = globals.ADS_KEY
 	}
 
-	req, err := http.Get(base + string(dataset.CopernicusDetails.TaskID))
+	req, err := http.Get(base + string(dataset.TaskDetails.TaskID))
+	req.Header.Set("Content-Type", "application/json")
+	req.Request.SetBasicAuth(uid, key)
+
 	if err != nil {
-		dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+		dataset.TaskDetails.Error = models.CopernicusTaskError{
 			Reason:  err.Error(),
-			Message: "Please contact the BUILDSPACE Support Team (Code: GO0001).",
+			Message: "Please contact the Core Platform Support Team (Code: GO0001).",
 		}
-		_, err = globals.FileDB.UpdateWithId(dataset)
+		_, err = globals.CopernicusDB.UpdateWithId(dataset)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Request.SetBasicAuth(uid, key)
-
 InfiniteLoop:
 	for {
 		resp, err := http.DefaultClient.Do(req.Request)
 		if err != nil {
-			dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+			dataset.TaskDetails.Error = models.CopernicusTaskError{
 				Reason:  err.Error(),
 				Message: "There might be a problem on the Copernicus side. Try again later.",
 			}
-			_, err = globals.FileDB.UpdateWithId(dataset)
+			_, err = globals.CopernicusDB.UpdateWithId(dataset)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -227,11 +227,11 @@ InfiniteLoop:
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+			dataset.TaskDetails.Error = models.CopernicusTaskError{
 				Reason:  err.Error(),
-				Message: "Please contact the BUILDSPACE Support Team (Code: GO0002).",
+				Message: "Please contact the Core Platform Support Team (Code: GO0002).",
 			}
-			_, err = globals.FileDB.UpdateWithId(dataset)
+			_, err = globals.CopernicusDB.UpdateWithId(dataset)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -239,14 +239,13 @@ InfiniteLoop:
 		}
 
 		var task models.CopernicusTask
-
 		err = json.Unmarshal(body, &task)
 		if err != nil {
-			dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+			dataset.TaskDetails.Error = models.CopernicusTaskError{
 				Reason:  err.Error(),
-				Message: "Please contact the BUILDSPACE Support Team (Code: GO0003).",
+				Message: "Please contact the Core Platform Support Team (Code: GO0003).",
 			}
-			_, err = globals.FileDB.UpdateWithId(dataset)
+			_, err = globals.CopernicusDB.UpdateWithId(dataset)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -254,20 +253,20 @@ InfiniteLoop:
 		}
 
 		if task.State == "failed" {
-			dataset.CopernicusDetails.Status = "Failed"
-			dataset.CopernicusDetails.Error = task.Error
-			_, err = globals.FileDB.UpdateWithId(dataset)
+			dataset.TaskDetails.Status = "Failed"
+			dataset.TaskDetails.Error = task.Error
+			_, err = globals.CopernicusDB.UpdateWithId(dataset)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 			break InfiniteLoop
 		} else if task.State == "denied" {
-			dataset.CopernicusDetails.Status = "Denied"
-			dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+			dataset.TaskDetails.Status = "Denied"
+			dataset.TaskDetails.Error = models.CopernicusTaskError{
 				Message: task.Message,
 				Reason:  "",
 			}
-			_, err = globals.FileDB.UpdateWithId(dataset)
+			_, err = globals.CopernicusDB.UpdateWithId(dataset)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
@@ -279,11 +278,11 @@ InfiniteLoop:
 
 			downreq, err := http.Get(task.Location)
 			if err != nil {
-				dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+				dataset.TaskDetails.Error = models.CopernicusTaskError{
 					Reason:  err.Error(),
 					Message: "Destination doesn't exist (Code: GO0004).",
 				}
-				_, err = globals.FileDB.UpdateWithId(dataset)
+				_, err = globals.CopernicusDB.UpdateWithId(dataset)
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -292,11 +291,11 @@ InfiniteLoop:
 
 			downresp, err := http.DefaultClient.Do(downreq.Request)
 			if err != nil {
-				dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+				dataset.TaskDetails.Error = models.CopernicusTaskError{
 					Reason:  err.Error(),
 					Message: "Bad Request (Code: GO0005).",
 				}
-				_, err = globals.FileDB.UpdateWithId(dataset)
+				_, err = globals.CopernicusDB.UpdateWithId(dataset)
 				if err != nil {
 					fmt.Println(err.Error())
 				}
@@ -307,17 +306,30 @@ InfiniteLoop:
 			//calculate download size of complete file
 			downloadSize, err := strconv.Atoi(downresp.Header.Get("Content-Length"))
 			if err != nil {
-				dataset.CopernicusDetails.Error = models.CopernicusTaskError{
+				dataset.TaskDetails.Error = models.CopernicusTaskError{
 					Reason:  err.Error(),
 					Message: "Could not calcute size of dataset (Code: GO0006).",
 				}
-				_, err = globals.FileDB.UpdateWithId(dataset)
+				_, err = globals.CopernicusDB.UpdateWithId(dataset)
 				if err != nil {
 					fmt.Println(err.Error())
 				}
 				break InfiniteLoop
 			}
 
+			// Grab reference file
+			file, err := globals.FileDB.GetOneByID(dataset.FileId)
+			if err != nil {
+				dataset.TaskDetails.Error = models.CopernicusTaskError{
+					Reason:  err.Error(),
+					Message: "Could not retrieve reference file (Code: GO0007).",
+				}
+				_, err = globals.CopernicusDB.UpdateWithId(dataset)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
+				break InfiniteLoop
+			}
 			// Calculate the number of parts and the optimal part size
 			totalPartsCount := int(math.Ceil(float64(downloadSize) / float64(globals.PartSize)))
 
@@ -414,16 +426,25 @@ InfiniteLoop:
 					User: subject,
 				}
 
-				dataset.Total = totalPartsCount
-				meta := dataset.Meta
+				file.Total = totalPartsCount
+				meta := file.Meta
 				meta.Update = update
-				dataset.Meta = meta
+				file.Meta = meta
 
-				dataset.Size = int64(downloadSize)
-				dataset.CopernicusDetails.Status = "completed"
+				file.Size = int64(downloadSize)
 
 				//update file
-				dataset, err = globals.FileDB.UpdateWithId(dataset)
+				file, err = globals.FileDB.UpdateWithId(file)
+				if err != nil {
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+					break InfiniteLoop
+				}
+
+				// Update Copernicus record
+				dataset.TaskDetails.Status = "completed"
+				dataset, err = globals.CopernicusDB.UpdateWithId(dataset)
 				if err != nil {
 					if err != nil {
 						fmt.Println(err.Error())

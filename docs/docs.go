@@ -12,7 +12,7 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "BUILDSPACE Core Platform Support",
+            "name": "Core Platform Support",
             "url": "http://www.swagger.io/support",
             "email": "isotiropoulos@singularlogic.eu"
         },
@@ -125,6 +125,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/copernicus/{service}/available": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all available-for-download datasets",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Copernicus"
+                ],
+                "summary": "Get a list of available Copernicus datasets, based on services.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service (currently available 'ads' and 'cds', or 'all' for no specific service)",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.CopernicusRecord"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Anavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorReport"
+                        }
+                    }
+                }
+            }
+        },
         "/copernicus/{service}/dataset": {
             "post": {
                 "security": [
@@ -207,15 +262,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Service (currently available 'ads' and 'cds')",
-                        "name": "service",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "ID of the dataset to be downloaded",
-                        "name": "id",
+                        "name": "fileId",
                         "in": "path",
                         "required": true
                     }
@@ -1035,11 +1083,7 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "fingerprint": {
-                    "description": "Fingerprint of the dataset (used to identify datasets based on request parameters)",
-                    "type": "string"
-                },
-                "sercice": {
+                "service": {
                     "description": "Dataset's related service",
                     "type": "string"
                 },
@@ -1061,9 +1105,39 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": true
                 },
-                "datasetname": {
+                "dataset_name": {
                     "description": "Name of specific Copernicus API",
                     "type": "string"
+                }
+            }
+        },
+        "models.CopernicusRecord": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "description": "Copernicus body fingerprint as id",
+                    "type": "string"
+                },
+                "dataset_name": {
+                    "description": "Name of specific Copernicus API",
+                    "type": "string"
+                },
+                "file_id": {
+                    "description": "Reference File ID",
+                    "type": "string"
+                },
+                "parameters": {
+                    "description": "Request body",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "task_details": {
+                    "description": "Details related to Copernicus datasets",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CopernicusDetails"
+                        }
+                    ]
                 }
             }
         },
@@ -1263,14 +1337,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "copernicus_details": {
-                    "description": "Details related to Copernicus datasets",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.CopernicusDetails"
-                        }
-                    ]
                 },
                 "file_type": {
                     "description": "The file's extention",
@@ -1505,8 +1571,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "BUILSPACE Core Platform Swagger API",
-	Description:      "This is a swagger for the API that was developed as a core platform of the BUILDSPACE project.",
+	Title:            "Core Platform Swagger API",
+	Description:      "This is a swagger for the API that was developed as the backbone of the Core Platform.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

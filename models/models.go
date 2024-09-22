@@ -15,7 +15,7 @@ type OidcClaims struct {
 	GivenName        string   `json:"given_name"`
 	FamilyName       string   `json:"family_name,omitEmpty"`
 	Email            string   `json:"email"`
-	Groups           []string `json:"groupIDs"`
+	Groups           []string `json:"group_names"`
 }
 
 // Bucket struct
@@ -59,11 +59,10 @@ type CopernicusTaskError struct {
 
 // CopernicusDetails contains information related to the Copernicus files
 type CopernicusDetails struct {
-	TaskID      string              `json:"task_id" bson:"task_id"`         // Copernicus Task
-	Service     string              `json:"sercice" bson:"service"`         // Dataset's related service
-	Fingerprint string              `json:"fingerprint" bson:"fingerprint"` // Fingerprint of the dataset (used to identify datasets based on request parameters)
-	Status      string              `json:"status" bson:"status"`           // Copernicus task status
-	Error       CopernicusTaskError `json:"error,omitempty" bson:"error"`   // Error details in case of status failed
+	TaskID  string              `json:"task_id" bson:"task_id"`       // Copernicus Task
+	Service string              `json:"service" bson:"service"`       // Dataset's related service
+	Status  string              `json:"status" bson:"status"`         // Copernicus task status
+	Error   CopernicusTaskError `json:"error,omitempty" bson:"error"` // Error details in case of status failed
 }
 
 // Updated contains information about the versions of an file
@@ -74,16 +73,17 @@ type Updated struct {
 
 // File contains information about a file.
 type File struct {
-	Id                string            `json:"_id" bson:"_id"`                       // File's id
-	Meta              Meta              `json:"meta" bson:"meta"`                     // File's Metadata
-	FolderID          string            `json:"folder" bson:"folder"`                 // Parent folder of the file
-	Ancestors         []string          `json:"ancestors" bson:"ancestors"`           // All ancestor folders
-	OriginalTitle     string            `json:"original_title" bson:"original_title"` // The file's title before uploading
-	FileType          string            `json:"file_type" bson:"file_type"`           // The file's extention
-	Size              int64             `json:"size" bson:"size"`
-	Total             int               `json:"total" bson:"total"`
-	CopernicusDetails CopernicusDetails `json:"copernicus_details,omitempty" bson:"copernicus_details"` // Details related to Copernicus datasets
+	Id            string   `json:"_id" bson:"_id"`                       // File's id
+	Meta          Meta     `json:"meta" bson:"meta"`                     // File's Metadata
+	FolderID      string   `json:"folder" bson:"folder"`                 // Parent folder of the file
+	Ancestors     []string `json:"ancestors" bson:"ancestors"`           // All ancestor folders
+	OriginalTitle string   `json:"original_title" bson:"original_title"` // The file's title before uploading
+	FileType      string   `json:"file_type" bson:"file_type"`           // The file's extention
+	Size          int64    `json:"size" bson:"size"`
+	Total         int      `json:"total" bson:"total"`
 }
+
+//	CopernicusDetails CopernicusDetails `json:"copernicus_details,omitempty" bson:"copernicus_details"` // Details related to Copernicus datasets
 
 // Part contains information about a file's stream.
 type Part struct {
@@ -142,8 +142,17 @@ type ErrorReport struct {
 
 // Input for the request to send to Copericus API
 type CopernicusInput struct {
-	DatasetName string                 `json:"datasetname"` //Name of specific Copernicus API
-	Body        map[string]interface{} `json:"body"`        // Request body
+	DatasetName string                 `json:"dataset_name"` //Name of specific Copernicus API
+	Body        map[string]interface{} `json:"body"`         // Request body
+}
+
+// Input for the request to send to Copericus API
+type CopernicusRecord struct {
+	Id            string                 `json:"_id" bson:"_id"`                             // Copernicus body fingerprint as id
+	FileId        string                 `json:"file_id" bson:"file_id"`                     // Reference File ID
+	DatasetName   string                 `json:"dataset_name"`                               //Name of specific Copernicus API
+	RequestParams map[string]interface{} `json:"parameters" bson:"parameters"`               // Request body
+	TaskDetails   CopernicusDetails      `json:"task_details,omitempty" bson:"task_details"` // Details related to Copernicus datasets
 }
 
 type Form struct {
