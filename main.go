@@ -116,6 +116,7 @@ func main() {
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("id", "{folderId}").Methods("GET")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("path", "{folderPath}").Methods("GET")
 	r.HandleFunc("/folder/list", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
+	r.HandleFunc("/folder/mine", mid.NaiveAuthMiddleware(handle.GetMyFolders)).Methods("GET")
 
 	// Copernicus
 	r.HandleFunc("/copernicus/{service}/getall", mid.NaiveAuthMiddleware(handle.GetList)).Methods("GET")

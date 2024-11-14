@@ -948,3 +948,41 @@ func moveFolder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 	json.NewEncoder(w).Encode(folder)
 }
+
+func GetMyFolders(w http.ResponseWriter, r *http.Request) {
+
+	// folderPath := r.FormValue("folderPath")
+	var folders []models.Folder
+
+	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not resolve claims.", err.Error(), "FOL0053")
+		return
+	}
+
+	// Retrieve files from DB
+	folderCursor, err := globals.FolderDB.GetCursorByUserID(claims.Subject)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not get cursor of folders.", err.Error(), "FOL0054")
+		return
+	}
+	defer folderCursor.Close(context.Background())
+
+	for folderCursor.Next(context.Background()) {
+
+		var result bson.M
+		var folder models.Folder
+		if err = folderCursor.Decode(&result); err != nil {
+			utils.RespondWithError(w, http.StatusConflict, "Could not resolve cursor.", err.Error(), "FOL0055")
+			return
+		}
+
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &folder)
+		folders = append(folders, folder)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(folders)
+
+}

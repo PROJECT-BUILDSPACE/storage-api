@@ -185,3 +185,9 @@ func (folderstore *FolderStore) GetCursorByNameLevel(name string, group string, 
 	cursor, err := db.Collection(FOLDERSSCOLLECTION).Find(context.Background(), bson.M{"meta.title": name, "ancestors.0": group, "level": level})
 	return cursor, err
 }
+
+// GetCursorByUserID is to get a cursor with folders given the user ID of the creator.
+func (folderstore *FolderStore) GetCursorByUserID(userID string) (*mongo.Cursor, error) {
+	cursor, err := db.Collection(FOLDERSSCOLLECTION).Find(context.Background(), bson.M{"meta.creator": userID})
+	return cursor, err
+}

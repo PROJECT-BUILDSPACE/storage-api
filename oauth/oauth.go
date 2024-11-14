@@ -20,7 +20,7 @@ func Init() {
 	log.Println("Starting oidc configuration")
 	oidcProvider := os.Getenv("OIDC_PROVIDER")
 	if oidcProvider == "" {
-		oidcProvider = "https://keycloak-buildspace.euinno.eu/auth/realms/buildspace"
+		oidcProvider = "https://keycloak-buildspace.euinno.eu/realms/buildspace"
 	}
 	clientID := os.Getenv("CLIENT_ID")
 	if clientID == "" {
@@ -28,7 +28,7 @@ func Init() {
 	}
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	if clientSecret == "" {
-		clientSecret = "c9jzg80IHEelRsI850Eflgqqm"
+		clientSecret = "u7BxGumGaJ9Cq9XC8T10uBrNBy5A22qE"
 	}
 
 	ctx := context.Background()
