@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	CDSModels "github.com/SLG-European-Projects/cds-go/models"
 	"github.com/minio/minio-go/v7"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
@@ -16,6 +17,8 @@ type OidcClaims struct {
 	FamilyName       string   `json:"family_name,omitEmpty"`
 	Email            string   `json:"email"`
 	Groups           []string `json:"group_names"`
+	EditorIn         []string `json:"editor_in,omitempty"`
+	ViewerIn         []string `json:"viewer_in,omitempty"`
 }
 
 // Bucket struct
@@ -35,34 +38,6 @@ type Meta struct {
 	Write        []string  `json:"write" bson:"write"`                 // Array of user ids with writing rights
 	Tags         []string  `json:"tags" bson:"tags"`                   // Array of tags for the file
 	Update       Updated   `json:"update" bson:"update"`               // Array with data that store the updates
-}
-
-// CopernicusTask contains information on the response of a Copericus task
-type CopernicusTask struct {
-	State     string              `json:"state"`    //State of files to be downloaded
-	Location  string              `json:"location"` // Download link
-	RequestID string              `json:"request_id"`
-	Message   string              `json:"message,omitempty"` //If state=denied then this gives the reason the request was not accepted. Otherwise this is not present.
-	Error     CopernicusTaskError `json:"error,omitempty"`   // Only in case of task failed
-
-}
-
-// CopernicusTaskError contains information in cas state of task is "failed"
-type CopernicusTaskError struct {
-	Reason    string      `json:"reason"`              //Reason of Failure
-	Message   string      `json:"message"`             // Message to the user
-	Url       string      `json:"url,omitempty"`       // A URI which is unique to a particular class of error
-	Context   interface{} `json:"context,omitempty"`   // An arbitrary JSON object containing additional information for debugging
-	Permanent bool        `json:"permanent,omitempty"` // If this is true then the request should not be retried unchanged
-	Who       string      `json:"who,omitempty"`       // Is this a problem in the server or the request (server or client)?
-}
-
-// CopernicusDetails contains information related to the Copernicus files
-type CopernicusDetails struct {
-	TaskID  string              `json:"task_id" bson:"task_id"`       // Copernicus Task
-	Service string              `json:"service" bson:"service"`       // Dataset's related service
-	Status  string              `json:"status" bson:"status"`         // Copernicus task status
-	Error   CopernicusTaskError `json:"error,omitempty" bson:"error"` // Error details in case of status failed
 }
 
 // Updated contains information about the versions of an file
@@ -148,91 +123,9 @@ type CopernicusInput struct {
 
 // Input for the request to send to Copericus API
 type CopernicusRecord struct {
-	Id            string                 `json:"_id" bson:"_id"`                             // Copernicus body fingerprint as id
-	FileId        string                 `json:"file_id" bson:"file_id"`                     // Reference File ID
-	DatasetName   string                 `json:"dataset_name"`                               //Name of specific Copernicus API
-	RequestParams map[string]interface{} `json:"parameters" bson:"parameters"`               // Request body
-	TaskDetails   CopernicusDetails      `json:"task_details,omitempty" bson:"task_details"` // Details related to Copernicus datasets
-}
-
-type Form struct {
-	Css      string  `json:"css,omitempty" bson:"css"`
-	Details  Details `json:"details,omitempty" bson:"description"`
-	Help     string  `json:"help,omitempty" bson:"help"`
-	Label    string  `json:"label,omitempty" bson:"label"`
-	Name     string  `json:"name,omitempty" bson:"name"`
-	Required bool    `json:"required,omitempty" bson:"required"`
-	Type     string  `json:"type,omitempty" bson:"type"`
-}
-
-type Details struct {
-	Columns           int               `json:"columns,omitempty" bson:"columns"`
-	ID                int               `json:"id,omitempty" bson:"id"`
-	Labels            map[string]string `json:"labels,omitempty" bson:"labels"`
-	Values            []string          `json:"values,omitempty" bson:"values"`
-	Accordion         bool              `json:"accordion,omitempty" bson:"accordion"`
-	AccordionGroups   bool              `json:"accordionGroups,omitempty" bson:"accordionGroups"`
-	Displayaslist     bool              `json:"displayaslist,omitempty" bson:"displayaslist"`
-	Fullheight        bool              `json:"fullheight,omitempty" bson:"fullheight"`
-	Withmap           bool              `json:"withmap,omitempty" bson:"withmap"`
-	Wrapping          bool              `json:"wrapping,omitempty" bson:"wrapping"`
-	Precision         int               `json:"precision,omitempty" bson:"precision"`
-	MaximumSelections int               `json:"maximumSelections,omitempty" bson:"maximumSelections"`
-	TextFile          string            `json:"text:file,omitempty" bson:"text:file"`
-	Information       string            `json:"information,omitempty" bson:"information"`
-	AccordionOptions  *AccordionOpts    `json:"accordionOptions,omitempty" bson:"accordionOptions"`
-	Default           []interface{}     `json:"default,omitempty" bson:"default"`
-	Extentlabels      []string          `json:"extentlabels,omitempty" bson:"extentlabels"`
-	Groups            []interface{}     `json:"groups,omitempty" bson:"groups"`
-	Range             *RangeLocal       `json:"range,omitempty" bson:"range"`
-	ChangeVisible     bool              `json:"changevisible,omitempty" bson:"changevisible"`
-	ConCat            string            `json:"concat,omitempty" bson:"concat"`
-	Latidude          Coords            `json:"latitude,omitempty" bson:"latitude"`
-	Longitude         Coords            `json:"longitude,omitempty" bson:"longidude"`
-	Projection        Projection        `json:"projection,omitempty" bson:"projrction"`
-	Text              string            `json:"text,omitempty" bson:"text"`
-	Fields            []Fields          `json:"fields,omitempty" bson:"fields"`
-}
-
-type AccordionOpts struct {
-	OpenGroups interface{} `json:"openGroups,omitempty" bson:"openGroups"`
-	Searchable bool        `json:"searchable,omitempty" bson:"searchable"`
-}
-
-type RangeLocal struct {
-	E float32 `json:"e,omitempty" bson:"e"`
-	N float32 `json:"n,omitempty" bson:"n"`
-	W float32 `json:"w,omitempty" bson:"w"`
-	S float32 `json:"s,omitempty" bson:"s"`
-}
-
-type FormRespLocal struct {
-	Name     string `json:"name,omitempty" bson:"name"`
-	Required bool   `json:"required,omitempty" bson:"required"`
-	Type     string `json:"type,omitempty" bson:"type"`
-}
-
-type Coords struct {
-	Default   int        `json:"default,omitempty" bson:"default"`
-	Precision int        `json:"precision,omitempty" bson:"precision"`
-	Range     CoordRange `json:"range,omitempty" bson:"range"`
-}
-
-type CoordRange struct {
-	Min int `json:"min,omitempty" bson:"min"`
-	Max int `json:"max,omitempty" bson:"max"`
-}
-
-type Projection struct {
-	ID      int  `json:"id,omitempty" bson:"id"`
-	Overlay bool `json:"overlay,omitempty" bson:"overlay"`
-	Use     bool `json:"use,omitempty" bson:"use"`
-}
-
-type Fields struct {
-	Comments    string `json:"comments,omitempty" bson:"comments"`
-	MaxLength   int    `json:"maxlength,omitempty" bson:"maxlength"`
-	Placeholder string `json:"placeholder,omitempty" bson:"placeholder"`
-	Required    bool   `json:"required,omitempty" bson:"required"`
-	Type        string `json:"type,omitempty" bson:"type"`
+	Id            string                         `json:"_id" bson:"_id"`                   // Copernicus body fingerprint as id
+	FileId        string                         `json:"file_id" bson:"file_id"`           // Reference File ID
+	DatasetName   string                         `json:"dataset_name"`                     //Name of specific Copernicus API
+	RequestParams map[string]interface{}         `json:"parameters" bson:"parameters"`     // Request body
+	Details       CDSModels.PostProcessExecution `json:"details,omitempty" bson:"details"` // Details related to Copernicus datasets
 }

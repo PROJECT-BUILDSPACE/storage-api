@@ -108,12 +108,36 @@ func (a *AuthImplementation) AuthMiddleware(h http.HandlerFunc) http.HandlerFunc
 			q = map[string]string{"_id": id}
 		}
 
-		groupID, groupName, err := grabGroupId(q, collection)
+		groupID, groupName, folderIds, err := grabGroupId(q, collection)
 		if err != nil {
 			utils.RespondWithError(w, http.StatusUnauthorized, "Unable to resolve Group.", err.Error(), "MID0011")
 			return
 		}
-		if !utils.ItemInArray(claims.Groups, groupName) {
+
+		allow := false
+
+		if utils.ItemInArray(claims.Groups, groupName) {
+			r.Header.Add("X-Mode", "normal")
+			allow = true
+		}
+
+		// Second chance: Check if user has access to shared content
+		if !allow {
+			if folderIds != nil {
+				if checkSharedContent(claims.EditorIn, folderIds) {
+					r.Header.Add("X-Mode", "editor")
+					allow = true
+				}
+
+				if checkSharedContent(claims.ViewerIn, folderIds) {
+					r.Header.Add("X-Mode", "viewer")
+					allow = true
+				}
+
+			}
+		}
+
+		if !allow {
 			utils.RespondWithError(w, http.StatusForbidden, "Permission Denied.", "No permission rights for user in group.", "MID0006")
 			return
 		}
@@ -153,7 +177,7 @@ func (a *AuthImplementation) NaiveAuthMiddleware(h http.HandlerFunc) http.Handle
 			utils.RespondWithError(w, http.StatusInternalServerError, "Unable to initialize verifier.", err.Error(), "MID0010")
 			return
 		}
-
+		// r.Header.Add("X-Mode", "normal")
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -216,13 +240,15 @@ func extractKeysAndValues(data interface{}) map[string]string {
 	return result
 }
 
-func grabGroupId(q map[string]string, collection string) (string, string, error) {
+func grabGroupId(q map[string]string, collection string) (string, string, []string, error) {
 
 	var groupID string
 	var groupName string
 	var key string
 	var value string
 	var err error
+
+	var folderIds []string
 
 	for k, v := range q {
 		key = k
@@ -238,28 +264,31 @@ func grabGroupId(q map[string]string, collection string) (string, string, error)
 			var dbResult2 models.Folder
 			dbResult, err = fileDB.GetOneByID(value)
 			if err != nil {
-				return "", "", err
+				return "", "", nil, err
 			}
 			dbResult2, err = folderDB.GetOneByID(dbResult.Ancestors[0])
 			if err != nil {
-				return "", "", err
+				return "", "", nil, err
 			}
 			groupID = dbResult2.Id
 			groupName = dbResult2.Meta.Title
+			folderIds = append(dbResult.Ancestors, dbResult.FolderID)
 		} else {
 			var dbResult models.Folder
 			dbResult, err = folderDB.GetOneByID(value)
 			if err != nil {
-				return "", "", err
+				return "", "", nil, err
 			}
 			if dbResult.Level == 0 {
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
+				folderIds = nil
 			} else {
+				folderIds = append(dbResult.Ancestors, dbResult.Id)
 				id := dbResult.Ancestors[0]
 				dbResult, err = folderDB.GetOneByID(id)
 				if err != nil {
-					return "", "", err
+					return "", "", nil, err
 				}
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
@@ -271,24 +300,27 @@ func grabGroupId(q map[string]string, collection string) (string, string, error)
 		if key == "name" {
 			dbResult, err := folderDB.GetRootByName(value)
 			if err != nil {
-				return "", "", err
+				return "", "", nil, err
 			}
 			groupID = dbResult.Id
 			groupName = dbResult.Meta.Title
+			folderIds = nil
 		} else {
 			dbResult, err := folderDB.GetOneByID(value)
 			if err != nil {
-				return "", "", err
+				return "", "", nil, err
 			}
 
 			if dbResult.Level == 0 {
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
+				folderIds = nil
 			} else {
+				folderIds = append(dbResult.Ancestors, dbResult.Id)
 				id := dbResult.Ancestors[0]
 				dbResult, err = folderDB.GetOneByID(id)
 				if err != nil {
-					return "", "", err
+					return "", "", nil, err
 				}
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
@@ -298,12 +330,31 @@ func grabGroupId(q map[string]string, collection string) (string, string, error)
 	case "bucket":
 		dbResult, err := folderDB.GetOneByID(value)
 		if err != nil {
-			return "", "", err
+			return "", "", nil, err
 		}
 		groupID = dbResult.Id
 		groupName = dbResult.Meta.Title
-
+		folderIds = nil
 	}
 
-	return groupID, groupName, err
+	return groupID, groupName, folderIds, err
+}
+
+func checkSharedContent(arr1 []string, arr2 []string) bool {
+	// Create a map to store unique elements of the first array
+	lookup := make(map[string]struct{})
+
+	// Populate the map with unique elements from the first array
+	for _, item := range arr1 {
+		lookup[item] = struct{}{}
+	}
+
+	// Check if any element of the second array exists in the map
+	for _, item := range arr2 {
+		if _, found := lookup[item]; found {
+			return true
+		}
+	}
+
+	return false
 }

@@ -39,7 +39,7 @@ func optionsHandler(w http.ResponseWriter, r *http.Request) {
 	// headers.Add("Vary", "Origin")
 	headers.Add("Vary", "Access-Control-Request-Method")
 	headers.Add("Vary", "Access-Control-Request-Headers")
-	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token, Authorization, X-Group-Id, Total, total")
+	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token, Authorization, Total, total") // X-Group-Id
 	headers.Add("Access-Control-Allow-Methods", "GET, PUT, DELETE, POST, OPTIONS")
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
@@ -116,14 +116,14 @@ func main() {
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("id", "{folderId}").Methods("GET")
 	r.HandleFunc("/folder", mid.AuthMiddleware(handle.GetFolder)).Queries("path", "{folderPath}").Methods("GET")
 	r.HandleFunc("/folder/list", mid.AuthMiddleware(handle.GetFolderItems)).Queries("id", "{folderId}").Methods("GET")
-	r.HandleFunc("/folder/mine", mid.NaiveAuthMiddleware(handle.GetMyFolders)).Methods("GET")
+	// r.HandleFunc("/folder/mine", mid.NaiveAuthMiddleware(handle.GetMyFolders)).Methods("GET")
 
 	// Copernicus
-	r.HandleFunc("/copernicus/{service}/getall", mid.NaiveAuthMiddleware(handle.GetList)).Methods("GET")
-	r.HandleFunc("/copernicus/{service}/getform/{id}", mid.NaiveAuthMiddleware(handle.GetForm)).Methods("GET")
-	r.HandleFunc("/copernicus/{service}/dataset", mid.NaiveAuthMiddleware(handle.PostDataset)).Methods("POST")
-	r.HandleFunc("/copernicus/status/dataset/{fileId}", mid.NaiveAuthMiddleware(handle.GetStatus)).Methods("GET")
-	r.HandleFunc("/copernicus/{service}/available", mid.NaiveAuthMiddleware(handle.GetAvailable)).Methods("GET")
+	r.HandleFunc("/copernicus/collections", mid.NaiveAuthMiddleware(handle.GetList)).Methods("GET")
+	r.HandleFunc("/copernicus/form/{id}", mid.NaiveAuthMiddleware(handle.GetForm)).Methods("GET")
+	r.HandleFunc("/copernicus/dataset", mid.NaiveAuthMiddleware(handle.PostDataset)).Methods("POST")
+	r.HandleFunc("/copernicus/dataset/{fileId}", mid.NaiveAuthMiddleware(handle.CheckStatus)).Methods("GET")
+	r.HandleFunc("/copernicus/available", mid.NaiveAuthMiddleware(handle.GetAvailable)).Methods("GET")
 
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 

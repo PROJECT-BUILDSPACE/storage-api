@@ -1,20 +1,13 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"io"
-	"math"
 	"net/http"
-	"strconv"
-	"sync"
 
 	"github.com/isotiropoulos/storage-api/globals"
 	"github.com/isotiropoulos/storage-api/models"
 	"github.com/isotiropoulos/storage-api/utils"
-	"github.com/minio/minio-go/v7"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"time"
@@ -22,7 +15,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// GetList handles the /copernicus/{service}/getall GET request.
+// GetList handles the /copernicus/collections GET request.
 // @Summary Get a list of all available datasets related to a specific service.
 // @Description This is the endopoint to get a list of all available datasets of a service.
 // @Description Currently supported services are "ads" and "cds"
@@ -36,56 +29,26 @@ import (
 // @Router /copernicus/{service}/getall [get]
 // @Security BearerAuth
 func GetList(w http.ResponseWriter, r *http.Request) {
+	// var collections CDSModels.CollectionList
 
-	params := mux.Vars(r)
-	service := params["service"]
-	base := ""
-
-	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
+	collections, err := globals.CopernicusClient.GetCollections()
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not retrieve all collections", err.Error(), "COP0001")
 		return
 	}
 
-	if service == "cds" {
-		base = "https://cds.climate.copernicus.eu/api/v2/resources/"
-	}
-
-	if service == "ads" {
-		base = "https://ads.atmosphere.copernicus.eu/api/v2/resources/"
-	}
-
-	req, err := http.Get(base)
-
-	//form request to destination
+	response, err := json.Marshal(collections)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0001")
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not marshal CollectionList to JSON", err.Error(), "COP0002")
 		return
 	}
-
-	//do request
-	resp, err := http.DefaultClient.Do(req.Request)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not complete request", err.Error(), "COP0002")
-	}
-
-	defer resp.Body.Close()
-
-	//read body
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Error in Response Body", err.Error(), "COP0003")
-	}
-
-	//encode response into json
-	var a []string
-	json.Unmarshal(body, &a)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(a)
+	w.Write(response)
 }
 
-// GetForm handles the /copernicus/{service}/getform/{id} GET request.
+// GetForm handles the /copernicus/form/{id} GET request.
 // @Summary Get the form of a dataset that is related to a specific service.
 // @Description A form is a set of rules indicating which parameters are neccessary for the dataset to be retrieved.
 // @Description Please note that some parameters cannot be used with other. The selection rules are also included in the forms.
@@ -93,7 +56,7 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param service path string true "Service (currently available 'ads' and 'cds')"
 // @Param id path string true "ID of the dataset of interest"
-// @Success 200 {object} models.Form "OK"
+// @Success 200 {object} formModel "OK"
 // @Failure 400 {object} models.ErrorReport "Bad Request"
 // @Failure 500 {object} models.ErrorReport "Internal Server Error"
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
@@ -102,56 +65,27 @@ func GetList(w http.ResponseWriter, r *http.Request) {
 func GetForm(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
-	datasetID := params["id"]
+	collectionID := params["id"]
 
-	w.Header().Set("Content-Type", "application/json")
-	service := params["service"]
-	base := ""
-
-	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Provide service 'cds' or 'ads'", "COP0016")
-		return
-	}
-
-	if service == "cds" {
-		base = "http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/"
-	}
-
-	//TO BE CHANGED!! ADS CURRENTLY UNAVAILABLE
-	if service == "ads" {
-		base = "http://datastore.copernicus-climate.eu/c3s/published-forms/c3sprod/"
-	}
-
-	req, err := http.Get(base + string(datasetID) + "/form.json")
-
+	form, err := globals.CopernicusClient.GetCollectionForm(collectionID)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Invalid Dataset Value", err.Error(), "FORM001")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Could not retrieve form", err.Error(), "FORM003")
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(req.Request)
+	response, err := json.Marshal(form)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not reach Copernicus endpoint", err.Error(), "FORM002")
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not marshal list of Forms to JSON", err.Error(), "COP0002")
 		return
 	}
-
-	defer resp.Body.Close()
-
-	var myform []models.Form
-
-	err = json.NewDecoder(resp.Body).Decode(&myform)
-
-	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could not handle response", err.Error(), "FORM003")
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(myform)
+	w.Write(response)
+	// json.NewEncoder(w).Encode(response)
+
 }
 
-// PostDataset handles the /copernicus/{service}/dataset POST request.
+// PostDataset handles the /copernicus/dataset POST request.
 // @Summary Post a request for a specific dataset (create a Copernicus task that will make a dataset available for download).
 // @Description The request can be specified by the body of the request using the parameters of the dataset.
 // @Description Please note that some parameters cannot be used with other. For the dataset parameters' rules consider the dataset's form.
@@ -203,60 +137,12 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := reqBody.DatasetName
-	//encode input to json
-	content, err := json.Marshal(reqBody.Body)
+	process, err := globals.CopernicusClient.CreateProcess(name, reqBody.Body)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve content.", err.Error(), "COP0006")
+		utils.RespondWithError(w, http.StatusBadRequest, "Could not create Process.", err.Error(), "COP0010")
 		return
 	}
 
-	params := mux.Vars(r)
-	service := params["service"]
-	base := ""
-
-	if service != "cds" && service != "ads" {
-		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", err.Error(), "COP0016")
-		return
-	}
-
-	if service == "cds" {
-		base = "https://cds.climate.copernicus.eu/api/v2/resources/"
-	}
-
-	if service == "ads" {
-		base = "https://ads.atmosphere.copernicus.eu/api/v2/resources/"
-	}
-
-	req, err := http.NewRequest("POST", base+name, bytes.NewBuffer(content))
-
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not Reach Copernicus Domain", err.Error(), "COP0007")
-		return
-	}
-	//auth for cds, should be const
-	req.Header.Set("Content-Type", "application/json")
-
-	if service == "cds" {
-		req.SetBasicAuth(globals.CDS_UID, globals.CDS_KEY)
-	}
-
-	if service == "ads" {
-		req.SetBasicAuth(globals.ADS_UID, globals.ADS_KEY)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not Reach Copernicus Data", err.Error(), "COP0008")
-		return
-	}
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Could Read Copernicus Response", err.Error(), "COP0009")
-	}
-
-	var b models.CopernicusTask
-	json.Unmarshal(body, &b)
 	postFile.FolderID = globals.COPERNICUS_BUCKET_ID
 	//get bucket
 	folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
@@ -264,6 +150,7 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "COP0010")
 		return
 	}
+
 	//create file id
 	fileID, err := utils.GenerateUUID()
 	if err != nil {
@@ -282,13 +169,6 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 	postFile.OriginalTitle = title
 	postFile.Size = 0
 	postFile.Ancestors = append(folder.Ancestors, postFile.FolderID)
-
-	copDetails := models.CopernicusDetails{
-		TaskID:  b.RequestID,
-		Status:  b.State,
-		Service: service,
-		Error:   models.CopernicusTaskError{},
-	}
 
 	meta := postFile.Meta
 	meta.DateCreation = time.Now()
@@ -310,7 +190,7 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 		FileId:        fileID,
 		DatasetName:   reqBody.DatasetName,
 		RequestParams: reqBody.Body,
-		TaskDetails:   copDetails,
+		Details:       process,
 	}
 
 	err = globals.CopernicusDB.InsertOne(copInput)
@@ -353,14 +233,14 @@ func PostDataset(w http.ResponseWriter, r *http.Request) {
 // @Failure 503 {object} models.ErrorReport "Service Anavailable"
 // @Router /copernicus/{service}/dataset/{id} [get]
 // @Security BearerAuth
-func GetStatus(w http.ResponseWriter, r *http.Request) {
+func CheckStatus(w http.ResponseWriter, r *http.Request) {
 	// using task id of a request first checks if task in completed then proceeds to dowload data to db if so
 	//get claims
-	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "COP0015")
-		return
-	}
+	// claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
+	// if err != nil {
+	// 	utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "COP0015")
+	// 	return
+	// }
 
 	params := mux.Vars(r)
 	fileID := params["fileId"]
@@ -371,202 +251,26 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	base := ""
-	uid := ""
-	key := ""
-
-	if copRec.TaskDetails.Service == "cds" {
-		base = "https://cds.climate.copernicus.eu/api/v2/tasks/"
-		uid = globals.CDS_UID
-		key = globals.CDS_KEY
-	}
-
-	if copRec.TaskDetails.Service == "ads" {
-		base = "https://ads.atmosphere.copernicus.eu/api/v2/tasks/"
-		uid = globals.ADS_UID
-		key = globals.ADS_KEY
-	}
-
-	req, err := http.Get(base + string(copRec.TaskDetails.TaskID))
+	//get relevant file from db
+	postFile, err := globals.FileDB.GetOneByID(copRec.FileId)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Destination doesn't exist.", err.Error(), "COP0017")
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving file from database.", err.Error(), "COP0020")
 		return
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Request.SetBasicAuth(uid, key)
-
-	resp, err := http.DefaultClient.Do(req.Request)
-	if err != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Could not complete request", err.Error(), "COP0018")
+	if postFile.Size == 0 {
+		// Start downloading
+		claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Could not resolve claims.", err.Error(), "COP0004")
+			return
+		}
+		utils.CheckCopernicusStatus(copRec, claims.Subject)
 	}
 
-	defer resp.Body.Close()
-
-	body, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		utils.RespondWithError(w, http.StatusBadRequest, "Error in Copernicus Response", err.Error(), "COP0019")
-	}
-
-	var b models.CopernicusTask
-
-	json.Unmarshal(body, &b)
-
-	if b.State != "completed" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		json.NewEncoder(w).Encode(b)
-	} else {
-		//here we have to save the dataset via the download link to our database
-		//split data into parts go routines etc.
-		//then we will deal with copernicus data as a normal file in our db
-		w.Header().Set("Content-Type", "application/json")
-
-		var postFile models.File
-
-		//get relevant file from db
-		postFile, err = globals.FileDB.GetOneByID(copRec.FileId)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Error in retrieving file from database.", err.Error(), "COP0020")
-			return
-		}
-		// Set bucket ID; this is the "copernicus bucket" where all the cop data is saved
-
-		postFile.FolderID = globals.COPERNICUS_BUCKET_ID
-
-		downreq, err := http.Get(b.Location)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Destination doesn't exist.", err.Error(), "COP0021")
-			return
-		}
-
-		downresp, err := http.DefaultClient.Do(downreq.Request)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Error in Dataset location", err.Error(), "COP0022")
-		}
-
-		defer downresp.Body.Close()
-
-		//calculate download size of complete file
-		downloadSize, err := strconv.Atoi(downresp.Header.Get("Content-Length"))
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could not calculate size of dataset.", err.Error(), "COP0023")
-			return
-		}
-
-		// Calculate the number of parts and the optimal part size
-		totalPartsCount := int(math.Ceil(float64(downloadSize) / float64(globals.PartSize)))
-
-		//reach copernicus bucket in db
-		folder, err := globals.FolderDB.GetOneByID(postFile.FolderID)
-		if err != nil || folder.Id == "" {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could not find parent folder.", err.Error(), "COP0024")
-			return
-		}
-
-		//update files' missing info and meta
-		update := models.Updated{
-			Date: time.Now(),
-			User: claims.Subject,
-		}
-
-		postFile.Total = totalPartsCount
-		meta := postFile.Meta
-		meta.Update = update
-		postFile.Meta = meta
-
-		//update file
-		_, err = globals.FileDB.UpdateWithId(postFile)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusBadRequest, "Could update file entry.", err.Error(), "COP0025")
-		}
-		// Create a slice of channels to hold upload results
-		partsCh := make(chan models.Part, totalPartsCount)
-
-		// Create a waitgroup to synchronize uploads
-		var wg sync.WaitGroup
-
-		//iterate through the parts
-		for i := int(1); i <= totalPartsCount; i++ {
-
-			// Read part data into a buffer
-			partBuffer := make([]byte, globals.PartSize)
-			n, err := io.ReadFull(downresp.Body, partBuffer)
-			//check if error is not end of stream
-			if err != nil && !(errors.Is(err, io.ErrUnexpectedEOF)) {
-				break
-			}
-
-			// Create a new reader for this part
-			partReader := bytes.NewReader(partBuffer[:n])
-			//partBytes := partBuffer[:n]
-			size := len(partBuffer[:n])
-			if size == 0 {
-				return
-			}
-			wg.Add(1)
-			go func(partReader io.Reader, item int) {
-				//post file
-
-				defer wg.Done()
-				// Make updates in document
-				var filePart models.Part
-				partId, err := utils.GenerateUUID()
-				if err != nil {
-					utils.RespondWithError(w, http.StatusInternalServerError, "Error in creating part's ID.", err.Error(), "COP0026")
-					return
-				}
-
-				//get part info
-				filePart.Id = partId
-				filePart.FileID = postFile.Id
-				filePart.Size = int64(size)
-				filePart.PartNumber = item
-				// Upload part
-				uploadInfo, err := globals.Storage.PostPart(globals.COPERNICUS_BUCKET_ID, partId, partReader, int64(size), minio.PutObjectOptions{})
-				if err != nil {
-					utils.RespondWithError(w, http.StatusBadRequest, "Could post part of file.", err.Error(), "COP0027")
-					return
-				}
-
-				filePart.UploadInfo = uploadInfo
-
-				// insert part to db
-				err = globals.PartsDB.InsertOne(filePart)
-				if err != nil {
-					utils.RespondWithError(w, http.StatusBadRequest, "Could not insert part document.", err.Error(), "COP0028")
-					return
-				}
-				//add part to parts channel
-				partsCh <- filePart
-
-			}(partReader, i)
-
-		}
-
-		// Wait for all parts to finish uploading
-		go func() {
-			wg.Wait()
-			close(partsCh)
-		}()
-
-		//Update file size
-		_, err = globals.FileDB.UpdateFileSize(postFile.Id, downloadSize)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update file's size.", err.Error(), "COP0029")
-			return
-		}
-
-		// Update Ancestor sizes
-		err = globals.FolderDB.UpdateAncestorSize(postFile.Ancestors, int64(downloadSize), true)
-		if err != nil {
-			utils.RespondWithError(w, http.StatusInternalServerError, "Could not update ancestore's meta.", err.Error(), "COP0030")
-			return
-		}
-
-		json.NewEncoder(w).Encode(postFile)
-		w.WriteHeader(http.StatusOK)
-	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(postFile)
 
 }
 
@@ -583,17 +287,10 @@ func GetStatus(w http.ResponseWriter, r *http.Request) {
 // @Router /copernicus/{service}/available [get]
 // @Security BearerAuth
 func GetAvailable(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	service := params["service"]
-
-	if service != "cds" && service != "ads" && service != "all" {
-		utils.RespondWithError(w, http.StatusServiceUnavailable, "Service not supported.", "Select among 'cds', 'ads' and 'all", "COP0047")
-		return
-	}
 
 	var response []models.CopernicusRecord
 
-	dataCursor, err := globals.CopernicusDB.GetCursorByService(service)
+	dataCursor, err := globals.CopernicusDB.GetCursorAll()
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not open cursor.", err.Error(), "COP0036")
 		return

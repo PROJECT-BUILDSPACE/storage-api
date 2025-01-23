@@ -31,6 +31,12 @@ import (
 // @Security BearerAuth
 func PostFolder(w http.ResponseWriter, r *http.Request) {
 
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
+
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -166,6 +172,12 @@ func PostFolder(w http.ResponseWriter, r *http.Request) {
 // @Router /folder/{id} [delete]
 // @Security BearerAuth
 func DeleteFolder(w http.ResponseWriter, r *http.Request) {
+
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -416,6 +428,12 @@ func GetFolder(w http.ResponseWriter, r *http.Request) {
 // @Router /folder [put]
 // @Security BearerAuth
 func UpdateFolder(w http.ResponseWriter, r *http.Request) {
+
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -826,6 +844,12 @@ func copySubFolder(folderID string, newDest string, bucketID string, nName strin
 // @Router /folder/copy [post]
 // @Security BearerAuth
 func CopyFolder(w http.ResponseWriter, r *http.Request) {
+
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))

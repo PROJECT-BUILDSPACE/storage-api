@@ -57,10 +57,10 @@ func (copernicustore *CopernicusStore) UpdateWithId(copenicus_input models.Coper
 	filter := bson.M{"_id": copenicus_input.Id}
 	update := bson.M{
 		"$set": bson.M{
-			"file_id":            copenicus_input.FileId,
-			"dataset_name":       copenicus_input.DatasetName,
-			"parameters":         copenicus_input.RequestParams,
-			"copernicus_details": copenicus_input.TaskDetails,
+			"file_id":      copenicus_input.FileId,
+			"dataset_name": copenicus_input.DatasetName,
+			"parameters":   copenicus_input.RequestParams,
+			"details":      copenicus_input.Details,
 		},
 	}
 	_, erro := db.Collection(COPERNICUSCOLLECTION).UpdateOne(context.TODO(), filter, update)
@@ -68,13 +68,8 @@ func (copernicustore *CopernicusStore) UpdateWithId(copenicus_input models.Coper
 	return copenicus_input, erro
 }
 
-// GetCursorByService is to get a cursor with datsets by service.
-func (copernicustore *CopernicusStore) GetCursorByService(service string) (*mongo.Cursor, error) {
-
-	if service == "all" {
-		cursor, err := db.Collection(COPERNICUSCOLLECTION).Find(context.Background(), bson.M{})
-		return cursor, err
-	}
-	cursor, err := db.Collection(COPERNICUSCOLLECTION).Find(context.Background(), bson.M{"task_details.service": service})
+// GetCursorAll is to get a cursor with datsets by service.
+func (copernicustore *CopernicusStore) GetCursorAll() (*mongo.Cursor, error) {
+	cursor, err := db.Collection(COPERNICUSCOLLECTION).Find(context.Background(), bson.M{})
 	return cursor, err
 }

@@ -122,7 +122,7 @@ type ICopernicusStore interface {
 	UpdateWithId(copenicus_input models.CopernicusRecord) (models.CopernicusRecord, error)
 
 	// Get cursor by service
-	GetCursorByService(service string) (*mongo.Cursor, error)
+	GetCursorAll() (*mongo.Cursor, error)
 }
 
 // FileStore ...

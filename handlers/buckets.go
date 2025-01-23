@@ -29,7 +29,6 @@ import (
 // @Router /bucket [post]
 // @Security BearerAuth
 func MakeBucket(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Accept", "application/json")
 
@@ -86,6 +85,11 @@ func MakeBucket(w http.ResponseWriter, r *http.Request) {
 // @Router /bucket/{id} [delete]
 // @Security BearerAuth
 func DeleteBucket(w http.ResponseWriter, r *http.Request) {
+	mode := r.Header.Get("X-Mode")
+	if mode != "normal" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with shared rights can't perform this action", "BUC0001")
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 

@@ -46,6 +46,12 @@ import (
 // @Security BearerAuth
 func PostFile(w http.ResponseWriter, r *http.Request) {
 
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
+
 	var content = r.Header.Get("Content-Type")
 
 	if content == "application/json" {
@@ -366,6 +372,12 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 func DeleteFile(w http.ResponseWriter, r *http.Request) {
 
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
+
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -484,6 +496,12 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 func UpdateFile(w http.ResponseWriter, r *http.Request) {
 
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
+
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
 	if err != nil {
@@ -568,6 +586,12 @@ func UpdateFile(w http.ResponseWriter, r *http.Request) {
 
 // CopyFile is to copy a file.
 func CopyFile(w http.ResponseWriter, r *http.Request) {
+
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
@@ -717,6 +741,12 @@ func CopyFile(w http.ResponseWriter, r *http.Request) {
 
 // MoveFile is to move a folder.
 func MoveFile(w http.ResponseWriter, r *http.Request) {
+
+	mode := r.Header.Get("X-Mode")
+	if mode == "viewer" {
+		utils.RespondWithError(w, http.StatusForbidden, "User not allowed", "User with viewer rights can't perform this action", "BUC0001")
+		return
+	}
 
 	// Resolve Claims
 	claims, err := utils.GetClaimsFromContext(r.Context().Value("claims"))
