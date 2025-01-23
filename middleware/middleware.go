@@ -282,7 +282,7 @@ func grabGroupId(q map[string]string, collection string) (string, string, []stri
 			if dbResult.Level == 0 {
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
-				folderIds = nil
+				folderIds = []string{dbResult.Id}
 			} else {
 				folderIds = append(dbResult.Ancestors, dbResult.Id)
 				id := dbResult.Ancestors[0]
@@ -304,7 +304,7 @@ func grabGroupId(q map[string]string, collection string) (string, string, []stri
 			}
 			groupID = dbResult.Id
 			groupName = dbResult.Meta.Title
-			folderIds = nil
+			folderIds = []string{dbResult.Id}
 		} else {
 			dbResult, err := folderDB.GetOneByID(value)
 			if err != nil {
@@ -314,7 +314,7 @@ func grabGroupId(q map[string]string, collection string) (string, string, []stri
 			if dbResult.Level == 0 {
 				groupID = dbResult.Id
 				groupName = dbResult.Meta.Title
-				folderIds = nil
+				folderIds = []string{dbResult.Id}
 			} else {
 				folderIds = append(dbResult.Ancestors, dbResult.Id)
 				id := dbResult.Ancestors[0]
